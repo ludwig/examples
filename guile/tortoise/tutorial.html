@@ -1,0 +1,835 @@
+<html>
+<head>
+<title>Tutorial Introduction to Guile</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta name="author" content="David Drysdale">
+<meta name="description" content="Tutorial Introduction to Guile">
+<meta name="keywords" content="Guile, Scheme, tutorial, GNU, extendibility">
+</head>
+<body>
+<h1><center>Tutorial Introduction to Guile</center></h1>
+
+<p>This is a tutorial introduction to using Guile, the GNU extension
+language.  I'm aiming at people who want to <i>use</i> Guile, and who
+<i>don't</i> want to mess around in the guts of Guile itself.</p>
+
+<p>For example, if you've just written a spiffy new word
+processor/image manipulator/window manager, and you want your users to
+be able to run cunning scripts, then Guile is the library for you and
+(hopefully) this is the tutorial for you.</p>
+
+<p>I'm going to assume that you know a little bit about the Scheme
+programming language, and I'm also going to assume that you have
+managed to get Guile successfully built and installed on your
+system. I'm also going to assume that you have Guile version 1.3
+or higher.</p>
+
+<ul>
+  <li><a href="#fund">The Fundamentals</a></li>
+  <ul>
+    <li><a href="#fund.theory">Theory</a></li>
+    <li><a href="#fund.practice">Practice</a></li>
+  </ul>
+  <li><a href="#tortoise">The Tortoise</a></li>
+  <ul>
+    <li><a href="#tortoise.core">The Core Program</a></li>
+    <li><a href="#tortoise.test">Testing it Out</a></li>
+  </ul>
+  <li><a href="#beguile">Becoming BeGuiled</a></li>
+  <ul>
+    <li><a href="#beguile.talk">Talking to the Tortoise</a></li>
+    <li><a href="#beguile.avail">Making Guile available from the program</a></li>
+    <li><a href="#beguile.primitives">Making the Primitives available from Guile</a></li>
+    <li><a href="#beguile.run">Running It</a></li>
+  </ul>
+  <li><a href="#nextsteps">Next Steps</a></li>
+  <ul>
+    <li><a href="#nextsteps.more">More Communication Between Scheme and C</a></li>
+    <li><a href="#nextsteps.scripts">Scripting</a></li>
+    <li><a href="#nextsteps.sofar">The Story So Far</a></li>
+    <li><a href="#nextsteps.read">Further Reading</a></li>
+  </ul>
+  <li><a href="#colophon">Colophon</a></li>
+</ul>
+
+
+<hr>
+<a name="fund"><h2>The Fundamentals</h2></a>
+
+<a name="fund.theory"><h3>Theory</h3></a>
+
+<p>Guile is an implementation of the Scheme programming language, made
+available as a library, together with conventions for interfacing to
+the interpreter from other programming languages. </p>
+
+<p>The point of this is to allow <i>extensibility</i>.  You can write
+a big piece of software in C, and then allow the users of your
+software to write Scheme scripts which call various C functions in
+your software.  I'll show a simple example of this later on.</p>
+
+<p>That's not all.  One of the things that Scheme as a programming
+language is particularly good at is the emulation of other programming
+languages.  This means that your users don't actually have to write
+their extension scripts in Scheme; instead, they can write the scripts
+in Tcl or Python, and just load up the appropriate chunk of Scheme
+code to emulate that language. (Or at least they will be able to, when
+the appropriate translators have been written.)</p>
+
+<a name="fund.practice"><h3>Practice</h3></a>
+
+<p>In concrete terms, you'll have a number of things available once
+you have Guile correctly installed.</p>
+
+<p>Firstly, you should have <code>guile</code>, which is the Guile
+Scheme interpreter as a stand-alone executable.  This is useful if you
+want to just write Scheme code; it's also useful for testing out bits
+of extension Scheme code interactively.  This should be very small,
+since all it contains is a thin wrapper for the Guile shared library
+(on my system, it's less than 4k).</p>
+
+<p>Secondly and most importantly, you should have
+<code>libguile.so</code>.  This is the Guile shared library, which you
+can link to from your C (or C++ or whatever) code.</p>
+
+<p>Thirdly, you'll probably also have some standard Scheme library
+functions installed somewhere.  These will typically have a
+<code>.scm</code> filename extension; on my (RedHat 6.0 Linux) system
+these are installed under <code>/usr/share/guile</code>.
+
+<p>The things I've described so far make up the primary parts of
+Guile, that is the things you'll need if you want to run a program
+which uses Guile as its extension language. (In RedHat
+package terms, these are all in the <code>guile</code> package).</p>
+
+<p>Given that we want to write code, we need a few more things (which
+are kept in the <code>guile-devel</code> RedHat package). . . .</p>
+
+<p>Fourth is a collection of header files which cover the process of
+calling Guile from C and vice-versa.  These might get installed into
+<code>/usr/include/guile</code> and <code>/usr/include/libguile</code>,
+for example.</p>
+
+<p>Fifth is the utility function <code>guile-snarf</code>.  This
+utility is used to ease the process of getting Guile and C to talk to
+one another, provided you stick to some coding conventions. </p>
+
+<p>Sixth and last is the utility <code>guile-config</code>.
+This program scans your local configuration and tells you what options
+you need to compile and link Guile code into your programs.</p>
+
+<hr>
+<a name="tortoise"><h2>The Tortoise</h2></a>
+
+<p><i><center>"Why did you call him Tortoise, if he wasn't one?" Alice
+asked. </center>
+<center>"We called him Tortoise because he taught us," said the Mock Turtle
+angrily.</center></i>
+<center>Lewis Carroll, Through the Looking Glass</center></p>
+
+
+<p>To demonstrate Guile, we are going to write a very simple graphics
+program.  It's written for the X Window system; however, it is so
+simple it should be easy to convert to other graphics systems.</p>
+
+<p>The program draws graphics by assuming that there is a tortoise
+sitting in the middle of the screen.  This tortoise is quite stupid,
+and can only understand a small number of instructions.</p>
+
+<p>You can ask the tortoise to turn to the right by a number of degrees
+(negative numbers will get him to turn to the left).  You can ask the
+tortoise to walk forward a certain number of steps.  And you can ask
+him to hold a pen either in his paws or behind his ear, so that when
+he moves he will either leave a mark on the ground or not
+(respectively).</p>
+
+<p>Finally, in case the tortoise gets utterly confused, you can ask
+the tortoise to return to the middle of the screen and turn to face
+the top of the screen again</p>
+
+<a name="tortoise.core"><h3>The Core Program</h3></a>
+
+<p>To program this up, I'm going to write a C program where each of
+the tortoise instructions corresponds to a function call.</p>
+
+<p>First, lets take care of the bookkeeping.  The <code>main()</code>
+function will deal with the mechanics of getting some graphics -
+getting a window and a GC, in X terms.</p>
+
+<pre>
+#include &lt;X11/Xlib.h>
+#define WINDOW_SIZE 500
+Display *theDisplay;
+Window theWindow;
+Screen *theScreen;
+GC theGC;
+int main(int argc, char *argv[])
+{
+    theDisplay = XOpenDisplay(NULL);
+    XSynchronize(theDisplay, True);
+    theScreen = DefaultScreenOfDisplay(theDisplay);
+    theWindow = XCreateSimpleWindow(theDisplay, RootWindowOfScreen(theScreen),
+                                    0, 0,
+                                    WINDOW_SIZE, WINDOW_SIZE, 0,
+                                    BlackPixelOfScreen(theScreen),
+                                    WhitePixelOfScreen(theScreen));
+    theGC = XCreateGC(theDisplay, theWindow, 0L, NULL);
+    XSetForeground(theDisplay, theGC, BlackPixelOfScreen(theScreen));
+    XMapWindow(theDisplay,theWindow);
+    /* more stuff to come here . . */
+    return 0;
+}
+</pre>
+
+<p>Next, we have some variables which hold the current state of the
+tortoise:</p>
+<pre>
+double currentX;
+double currentY;
+double currentDirection;
+int penDown;
+</pre>
+
+<p>We need to initialize this data, so we add the following function
+invocation to <code>main()</code>:</p>
+
+<pre>
+    tortoise_reset();
+</pre>
+
+<p>The function being invoked here implements one of the things that
+the tortoise can do.  There are similar functions which implement all
+of the other things that the tortoise can do:</p>
+
+<pre>
+#include &lt;math.h>
+#define DEGREES_TO_RADIANS  (3.1415926535897932384626433832795029L/180.0)
+
+void tortoise_reset()
+{
+    currentX = currentY = WINDOW_SIZE/2;
+    currentDirection = 0.0;
+    penDown = 1;
+}
+void tortoise_pendown()
+{
+    penDown = 1;
+}
+void tortoise_penup()
+{
+    penDown = 0;
+}
+void tortoise_turn(int degrees)
+{
+    currentDirection += (double)degrees;
+}
+void tortoise_move(int steps)
+{
+    double newX, newY;
+    /* first work out the new endpoint */
+    newX = currentX + sin(currentDirection*DEGREES_TO_RADIANS)*(double)steps;
+    newY = currentY - cos(currentDirection*DEGREES_TO_RADIANS)*(double)steps;
+    /* if the pen is down, draw a line */
+    if (penDown) XDrawLine(theDisplay, theWindow, theGC,
+                           (int)currentX, (int)currentY, (int)newX, (int)newY);
+    /* in either case, move the tortoise */
+    currentX = newX;
+    currentY = newY;
+}
+</pre>
+
+<a name="tortoise.test"><h3>Testing it Out</h3></a>
+
+<p>We can test that we have written our primitives correctly by
+temporarily including some test code at the end of <code>main()</code>:</p>
+
+<pre>
+    {
+        int ii;
+        tortoise_pendown();
+        for (ii=0; ii&lt;4; ii++) {
+            tortoise_move(100);
+            tortoise_turn(90.0);
+        }
+        /* sleep for a bit so the window stays visible */
+        sleep(10);
+    }
+</pre>
+
+<p>As expected, <a href="tortoise1.html">this</a>
+draws a square in the window. (Compilation instructions
+<a href="compilation.html">here</a>)</p>
+
+<img src="square.jpg" border=2 width=199 height=215
+alt="Square drawn by test code">
+
+<p>That's it.  We have all the code we need. Except, of course, that
+we have no way to get our tortoise to <i>do</i> anything. Now we want
+to let the user instruct the tortoise directly.</p>
+
+<hr>
+<a name="beguile"><h2>Becoming BeGuiled</h2></a>
+
+<a name="beguile.talk"><h3>Talking to the Tortoise</h3></a>
+
+<p>This is where Guile comes into play.  Without Guile, we would
+have to write code to read input from the user, interpret it, and call
+the appropriate tortoise primitive.</p>
+
+<p>Even if we did write this code, the user would only be able to
+instruct the tortoise directly.  There would be no way for the user to
+perform loops or iterations; they would just have to do a lot of
+typing.</p>
+
+<p>In fact, in order to get more programmable function out of the
+tortoise we would need to write an interpreter for a tortoise
+programming language.</p>
+
+<p>This would be wasted effort; Guile already provides a perfectly good way
+of making our tortoise programmable.  The next section talks about how
+to do this.</p>
+
+
+
+<a name="beguile.avail"><h3>Making Guile available from the program</h3></a>
+
+<p>The first step is to get access to the Guile library from within the
+program.  To do this, we first need to include the master header file:</p>
+
+<pre>
+#include &lt;guile/gh.h>
+</pre>
+
+<p>You may need to add an extra include directory to your path to get
+at this header file; the command <code>guile-config compile</code>
+should tell you where to find it.</p>
+
+<p>Next, we need to kick off the Guile interpreter. This is done in
+two steps; firstly, for arcane reasons we need to call
+<code>gh_enter</code> at the end of <code>main()</code>.</p>
+
+<pre>
+    gh_enter(argc, argv, inner_main);
+    return(0); /* never reached */
+</pre>
+
+<p>Secondly, <code>gh_enter</code> will call back into the
+<code>inner_main</code> function passed to it, and it is this
+<code>inner_main</code> function which actually calls
+<code>gh_repl</code> to start the Scheme interpreter
+(the <code>repl</code> stands for Read-Evaluate-Print Loop, in case you
+were interested).
+
+<pre>
+void inner_main(int argc, char **argv)
+{
+    register_procs();
+    gh_repl(argc, argv);
+}
+</pre>
+
+<p>This code refers to the function <code>register_procs</code>.  We'll
+come to this below</p>
+
+<p>Finally, we need to link with the <code>libguile.so</code> library.
+On my system, this simply involved adding <code>-lguile</code> to the
+link line.  Running <code>guile-config link</code> is a good way of
+finding out what you might need to do on your system.</p>
+
+<a name="beguile.primitives"><h3>Making the Primitives available from Guile</h3></a>
+
+<p>At this point, we now have our tortoise program invoking the Guile
+interpreter, but the user has no way of accessing all of our tortoise
+functionality. When the program starts, the user can interactively
+write programs in Scheme, but can't get the tortoise to wake up and do
+anything.</p>
+
+<p>What we need to do is to make all of our tortoise primitives
+available from the Scheme interpreter.</p>
+
+<p>To recap, these were:</p>
+<ul>
+  <li><code>tortoise_reset()</code> to return the tortoise to the
+  starting position</li>
+  <li><code>tortoise_pendown()</code> to lower the pen</li>
+  <li><code>tortoise_penup()</code> to raise the pen</li>
+  <li><code>tortoise_turn(int degrees)</code> to turn
+  <code>degrees</code> clockwise</li>
+  <li><code>tortoise_move(int steps)</code> to move <code>steps</code>
+  steps.</li>
+</ul>
+
+<p>We make Scheme accessible versions of all of these.</p>
+
+<pre>
+#include &lt;math.h>
+#define DEGREES_TO_RADIANS  (3.1415926535897932384626433832795029L/180.0)
+
+SCM tortoise_reset()
+{
+    currentX = currentY = WINDOW_SIZE/2;
+    currentDirection = 0;
+    penDown = 1;
+    return SCM_EOL;
+}
+SCM tortoise_pendown()
+{
+    penDown = 1;
+    return SCM_EOL;
+}
+SCM tortoise_penup()
+{
+    penDown = 0;
+    return SCM_EOL;
+}
+SCM tortoise_turn(SCM s_degrees)
+{
+    int degrees = SCM_INUM(s_degrees);
+    currentDirection += (double)degrees;
+    return SCM_EOL;
+}
+SCM tortoise_move(SCM s_steps)
+{
+    double newX, newY;
+    int steps = SCM_INUM(s_steps);
+    /* first work out the new endpoint */
+    newX = currentX + sin(currentDirection*DEGREES_TO_RADIANS)*(double)steps;
+    newY = currentY - cos(currentDirection*DEGREES_TO_RADIANS)*(double)steps;
+    /* if the pen is down, draw a line */
+    if (penDown) XDrawLine(theDisplay, theWindow, theGC,
+                           (int)currentX, (int)currentY, (int)newX, (int)newY);
+    /* in either case, move the tortoise */
+    currentX = newX;
+    currentY = newY;
+    return SCM_EOL;
+}
+</pre>
+
+<p>In this code, there are a few key points</p>
+<ul>
+  <li>Each of the new versions of these functions returns something of
+  type <code>SCM</code>, which is the universal type
+  for representing Scheme values inside C code.  For now, in all of these
+  functions we return the specific value <code>SCM_EOL</code>, which
+  is the way to say the Scheme value <code>()</code> in C.</li>
+  <li>The first three functions all take no arguments; however, the
+  last two functions each require a single argument.  The value of
+  this argument is going to be provided by the Scheme interpreter, and
+  so it appears as an <code>SCM</code> type once more</li>
+  <li>The macro <code>SCM_INUM</code> converts a Scheme object into a
+  regular C integer, on the assumption that the object <i>is</i>
+  actually an integer. (If it isn't, what happens is undefined)</li>
+</ul>
+
+<p>Having set up all of these C functions in a way which is accessible
+from Guile, we now need to tell Guile that they are there.  To do
+this, we define the function <code>register_procs</code> which was
+mentioned in the previous section.</p>
+
+<pre>
+void register_procs(void)
+{
+    gh_new_procedure("tortoise-reset",   tortoise_reset,   0, 0, 0);
+    gh_new_procedure("tortoise-pendown", tortoise_pendown, 0, 0, 0);
+    gh_new_procedure("tortoise-penup",   tortoise_penup,   0, 0, 0);
+    gh_new_procedure("tortoise-turn",    tortoise_turn,    1, 0, 0);
+    gh_new_procedure("tortoise-move",    tortoise_move,    1, 0, 0);
+}
+</pre>
+
+<p>The registration of the new Guile-accessible primitives is done by
+the calls to <code>gh_new_procedure</code>.  This function takes the
+following parameters</p>
+<ol>
+  <li>A string giving the name of the function when seen from
+  Guile.</li>
+  <li>The C function providing the primitive</li>
+  <li>The number of required arguments to the function (0 or 1 in all
+  our examples).</li>
+  <li>The number of optional arguments to the function (0 in all our
+  examples).</li>
+  <li>A boolean expression indicating whether the function takes a
+  'rest' list (false in all our examples)</li>
+</ol>
+
+<a name="beguile.run"><h3>Running It</h3></a>
+<p>Amazingly, that's it - we have the <a href="tortoise2.html">
+entire program</a>.  If we now compile and run the program, we get a
+Guile interpreter prompt:</p>
+<code>guile> </code>
+<p>We can now try a few commands:</p>
+<pre>
+guile> <b>(tortoise-move 100)</b>
+()
+guile> <b>(tortoise-turn 90)</b>
+()
+guile> <b>(tortoise-move 100)</b>
+()
+</pre>
+<p>At this point, a couple of lines should have appeared in the
+program's window.</p>
+
+<img src="ell.jpg" border=2 width=217 height=201
+alt="First lines drawn by the user">
+
+<p>Given that this is Scheme, we can define a new top-level procedure.</p>
+<pre>
+guile> <b>(define (move-n-turn angle) </b>
+...    <b>        (tortoise-move 100) (tortoise-turn angle))</b>
+guile> <b>(for-each move-n-turn '(80 80 80 80 80 80 80 80 80))</b>
+</pre>
+
+<img src="ninestar.jpg" border=2 width=259 height=262
+alt="Nine pointed star">
+<hr>
+<a name="nextsteps"><h2>Next Steps</h2></a>
+<a name="nextsteps.more"><h3>More Communication Between Scheme and C</h3></a>
+
+<p>All of the primitives so far have returned the empty list, because
+this was easy to do.  However, we'd now like to pass some information
+back from C to Scheme - in particular:</p>
+<ul>
+  <li><code>tortoise-turn</code> should return the angle that the
+  tortoise was at before this turn took effect</li>
+  <li><code>tortoise-penup</code> and <code>tortoise-pendown</code>
+  should both return the whether the pen was down before the call</li>
+  <li><code>tortoise-move</code> should return the previous position
+  of the turtle as a Scheme list, for example <code>(200 200)</code>
+</ul>
+
+<p>Also, we've noticed that <code>tortoise-move</code> and
+<code>tortoise-turn</code> only allow an integer argument.  It's time
+to change this so that we can specify floating point values for these
+arguments.</p>
+
+<pre>
+#include &lt;math.h>
+#define DEGREES_TO_RADIANS  (3.1415926535897932384626433832795029L/180.0)
+
+SCM tortoise_reset()
+{
+    currentX = currentY = WINDOW_SIZE/2;
+    currentDirection = 0;
+    penDown = 1;
+    return SCM_UNSPECIFIED;
+}
+SCM tortoise_pendown()
+{
+    int prevValue = penDown;
+    penDown = 1;
+    return (prevValue ? SCM_BOOL_T: SCM_BOOL_F);
+}
+SCM tortoise_penup()
+{
+    int prevValue = penDown;
+    penDown = 0;
+    return (prevValue ? SCM_BOOL_T: SCM_BOOL_F);
+}
+SCM tortoise_turn(SCM s_degrees)
+{
+    int prevValue = (int)currentDirection;
+    double degrees;
+    SCM_ASSERT(SCM_NUMBERP(s_degrees), s_degrees, SCM_ARG1, "tortoise-turn");
+    degrees = SCM_NUM2DBL(s_degrees);
+    currentDirection += degrees;
+    return SCM_MAKINUM(prevValue);
+}
+SCM tortoise_move(SCM s_steps)
+{
+    double oldX = currentX;
+    double oldY = currentY;
+    double newX, newY;
+    double steps;
+    SCM_ASSERT(SCM_NUMBERP(s_steps), s_steps, SCM_ARG1, "tortoise-move");
+    steps = SCM_NUM2DBL(s_steps);
+    /* first work out the new endpoint */
+    newX = currentX + sin(currentDirection*DEGREES_TO_RADIANS)*steps;
+    newY = currentY - cos(currentDirection*DEGREES_TO_RADIANS)*steps;
+    /* if the pen is down, draw a line */
+    if (penDown) XDrawLine(theDisplay, theWindow, theGC,
+                           (int)currentX, (int)currentY, (int)newX, (int)newY);
+    /* in either case, move the tortoise */
+    currentX = newX;
+    currentY = newY;
+    return gh_cons(gh_double2scm(oldX) , gh_cons(gh_double2scm(oldY), SCM_EOL));
+}
+</pre>
+
+<p>So what's different about this version of the code? Well, firstly
+the pen up/down functions use <code>SCM_BOOL_F</code> and
+<code>SCM_BOOL_T</code> to return the Scheme values <code>#f</code>
+and <code>#t</code>, as appropriate.  Secondly,
+<code>tortoise_turn</code> uses <code>SCM_MAKINUM</code> to build a
+Scheme integer from a C integer.</p>
+
+<p>Thirdly, the function <code>tortoise-move</code> builds a list
+containing the previous coordinates using</p>
+<ul>
+   <li><code>gh_double2scm</code>, which converts a C
+   <code>double</code> to the equivalent Scheme value, and</li>
+   <li><code>gh_cons</code>, which conses two C representations
+   (<code>SCM</code>s) of Scheme values together.</li>
+</ul>
+
+<p>Fourthly, <code>tortoise_move</code> and <code>tortoise_turn</code>
+use <code>SCM_NUM2DBL</code> instead
+of <code>SCM_INUM</code> to get a floating point value from their single
+arguments.</p>
+
+<p>Finally, I mentioned before that the results of <code>SCM_INUM</code> are
+undefined if the Scheme value passed in is not an integer.  The same
+is true for <code>SCM_NUM2DBL</code> if the Scheme value passed in is
+not some sort of number.  However, in this version of the
+code I protect against this possibility.</p>
+
+<p>The way to ensure that an argument passed from Scheme to C is of a
+particular type is to use <code>SCM_ASSERT</code>, combined with a
+test for the required type such as <code>SCM_NUMBERP</code> or
+<code>SCM_INUMP</code>.  The arguments to <code>SCM_ASSERT</code>
+are:</p>
+<ol>
+  <li> The test to perform.  If this returns 0, then an error is
+  signalled to the user.</li>
+  <li> The <code>SCM</code> object which caused the error, in this case the argument to
+  the C function.</li>
+  <li> A number indicating which position the erroneous argument was
+  in.  In this case, the functions only have one argument, so we use
+  the macro <code>SCM_ARG1</code>.</li>
+  <li> The name of the function (as seen from Scheme) which raised the error.</li>
+</ol>
+
+
+<p>We can take advantage of these changes (<a href="tortoise3.html">this version of
+the complete program</a>):</p>
+
+<pre>
+guile> <b>(tortoise-move 100)</b>
+(250.0 250.0)
+guile> <b>(tortoise-turn 90)</b>
+0
+guile> <b>(tortoise-move 100)</b>
+(250.0 150.0)
+guile> <b>(tortoise-turn (+ 90 45))</b>
+90
+guile> <b>(tortoise-move (sqrt (* 2 (* 100 100))))</b>
+(350.0 150.0)
+guile> <b>(tortoise-penup)</b>
+#t
+guile> <b>(tortoise-move "abc")</b>
+ERROR: In procedure tortoise-move in expression (tortoise-move "abc"):
+ERROR: Wrong type argument in position 1: "abc"
+ABORT: (wrong-type-arg)
+</pre>
+
+<img src="triangle.jpg" border=2 width=248 height=235
+alt="Right-angled triangle, drawn using an irrational number of steps">
+
+<a name="nextsteps.scripts"><h3>Scripting</h3></a>
+
+<p>In the examples so far, the program has kicked off the Guile Scheme
+interpreter, allowing the user to interact with the program
+dynamically.  For many of the potential uses of Guile, this is not
+what is needed; the program will only need to read in a configuration
+script at start-of-day, and then proceed with its normal
+processing</p>
+
+<p>So we're now going to change the program so that it reads in and
+runs a <code>.tortoise</code> file at start-of-day. To do this, we
+still need to use <code>gh_enter</code> to get to our
+<code>inner_main</code> function.  However, when we get there, we
+don't want to hand over control of the program to Guile with
+<code>gh_repl</code>.</p>
+
+<p>Instead, we want to open the <code>.tortoise</code> file and
+explicitly pass the lines from it to the Scheme interpreter, one by
+one.  When we're done with the file, we're done with the interpreter
+and we can get on with the main business of the program.</p>
+
+<pre>
+#define CONFIGFILENAME          ".tortoise"
+#define DIRECTORYSEPARATOR      "/"
+void read_config_file(void)
+{
+    char *homedir;
+    char *filename;
+    FILE *file;
+    char inputLine[1024];  /* hack: assume each line less than 1024 chars */
+    char *p;
+    /* open $HOME/.tortoise */
+    homedir = getenv("HOME");
+    if (homedir == NULL) return;
+    filename = (char *)malloc(strlen(homedir) + strlen(CONFIGFILENAME) +
+                              strlen(DIRECTORYSEPARATOR) + 1);
+    if (filename == NULL) return;
+    sprintf(filename, "%s%s%s", homedir, DIRECTORYSEPARATOR, CONFIGFILENAME);
+    file = fopen(filename, "r");
+    free(filename);
+    if (file == NULL) return;
+    /* spin through the file */
+    while (1) {
+        p = fgets(inputLine, sizeof(inputLine), file);
+        if (p == NULL) return;
+        gh_eval_str(p);
+    }
+    fclose(file);
+}
+void inner_main(int argc, char **argv)
+{
+    register_procs();
+    read_config_file();
+    /* now get on with the main business of the program . . . */
+    sleep(20);
+}
+</pre>
+
+<p>Here, the key function is <code>gh_eval_str</code>, which gets the
+Scheme interpreter to evaluate one particular string and then
+return. (The complete program is <a href="tortoise4.html"> here</a>)</p>
+
+<p>We can test this out with a sample <code>.tortoise</code> file,
+which defines a Scheme procedure for drawing a polygon with a given
+number of sides:</p>
+
+<pre>
+(define (move-n-turn angle) (tortoise-move 100) (tortoise-turn angle))
+(define (polygon n) (do ((i n (- i 1))) ((zero? i)) (move-n-turn (/ 360 n))))
+(polygon 7)
+</pre>
+
+<img src="heptagon.jpg" border=2 width=365 height=367
+alt="Heptagon drawn by the .tortoise file">
+
+<p>Unfortunately, there is a downside to this approach.  Each line of
+our <code>.tortoise</code> file has to be a complete Scheme expression.</p>
+
+<p>It's very easy to fix this - we just let Guile do more of the work
+for us.  There is a function <code>gh_eval_file</code> which will load
+an entire file and evaluate it:</p>
+<pre>
+#define CONFIGFILENAME          ".tortoise"
+#define DIRECTORYSEPARATOR      "/"
+void read_config_file(void)
+{
+    char *homedir;
+    char *filename;
+    /* build the $HOME/.tortoise filename */
+    homedir = getenv("HOME");
+    if (homedir == NULL) return;
+    filename = (char *)malloc(strlen(homedir) + strlen(CONFIGFILENAME) +
+                              strlen(DIRECTORYSEPARATOR) + 1);
+    if (filename == NULL) return;
+    sprintf(filename, "%s%s%s", homedir, DIRECTORYSEPARATOR, CONFIGFILENAME);
+    /* get Guile to do all of the work */
+    gh_eval_file(filename);
+    free(filename);
+}
+void inner_main(int argc, char **argv)
+{
+    register_procs();
+    read_config_file();
+    /* now get on with the main business of the program . . . */
+    gh_eval_str("(tortoise-turn 30)"); /* example: call C-defined procedure */
+    gh_eval_str("(polygon 3)");   /* example: call Scheme-defined procedure */
+    sleep(20);
+}
+</pre>
+
+<p>With <a href="tortoise5.html">this version</a> of the code, we can re-write our
+<code>.tortoise</code> file in a more easily readable version:</p>
+
+<pre>
+(define (move-n-turn angle)
+  (tortoise-move 100)
+  (tortoise-turn angle))
+(define (polygon n)
+  (do ((i n (- i 1)))
+      ((zero? i))
+    (move-n-turn (/ 360 n))))
+(polygon 7)
+</pre>
+
+<img src="heptriangle.jpg" border=2 width=355 height=330
+alt="Heptangle drawn by the .tortoise file, with triangle drawn by the main program">
+
+<a name="nextsteps.sofar"><h3>The Story So Far</h3></a>
+
+<p>Let's recap on what we've seen so far.  We can now:</p>
+<ul>
+  <li>Load up Guile from a C program, and get it to interpret user
+  input from a file or interactively</li>
+  <li>Make C functions available from Scheme with
+  <code>gh_new_procedure</code></li>
+  <ul>
+    <li>Pass simple Scheme values to these C functions, extracting the
+    values with <code>SCM_INUM</code> and
+    <code>SCM_NUM2DBL</code></li>
+    <li>Test that these Scheme values are of the expected type, using
+    <code>SCM_ASSERT</code> and <code>SCM_NUMBERP</code></li>
+    <li>Return simple and slightly more complicated Scheme values from these C
+    functions using:</li>
+    <ul>
+      <li><code>SCM_EOL</code></li>
+      <li><code>SCM_UNSPECIFIED</code></li>
+      <li><code>SCM_BOOL_F</code> and <code>SCM_BOOL_T</code></li>
+      <li><code>SCM_MAKINUM</code></li>
+      <li><code>gh_double2scm</code></li>
+      <li><code>gh_cons</code></li>
+    </ul>
+  </ul>
+  <li>Make Scheme functions available from C, invoking them by
+  evaluating a Scheme expression:
+  <code>gh_eval_str("<i>(procname args)</i>")</code></li>
+</ul>
+
+<a name="nextsteps.read"><h3>Further Reading</h3></a>
+
+<p>At this point, you probably need to find some more detailed
+information on Guile.  Bizarrely, the official Guile documentation is
+not currently available on the Guile homepage, so you'll either have
+to scan the internet for <code>guile-doc</code>, or you'll have to get the
+current <code>guile-doc</code> images via anonymous CVS (I couldn't do
+this because my internet proxy won't allow it).</p>
+
+<p>The Guile documentation includes a tutorial
+(<code>guile-tut.info</code>), a reference manual
+(<code>guile-ref.info*</code>) and a copy of the Revised^4 Report on
+the Algorithmic Language Scheme (<code>r4rs.info*</code>).</p>
+
+<p>Some things you might need to find out next:</p>
+<ul>
+  <li>How to get the value of a Scheme variable from C (hint: use
+  <code>gh_lookup</code>)</li>
+  <li>How to prevent an incorrect <code>.tortoise</code> file from
+  terminating your program (hint: use <code>gh_catch</code>)</li>
+  <li>How to make Guile emulate other languages</li>
+</ul>
+
+<p>Have fun . . </p>
+<hr>
+<a name="colophon"><h2>Colophon</h2></a>
+<p>I wrote this page because I really needed something like it when I
+started playing with Guile - I actually wrote the page as I figured
+out how to do things.</p>
+
+<p>Hopefully, this page will be useful to other people who are in the
+same position that I was.  If you're one of those people, please let
+me know if it has been useful, and if not, how it could be improved so
+that it is. (Thanks to Neil Jerram and others who have already provided some
+useful feedback).</p>
+
+<p>If you want to know the answers to deep tricky Guile questions, I'm
+probably not the best person to ask.  Try joining one of the Guile
+mailing lists (see
+<a href="http://www.gnu.org/software/guile/mail/mail.html">info
+here</a>).</p>
+
+<p>Copyright (c) 2000 David Drysdale</p>
+
+<p>Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.1 or any
+later version published by the Free Software Foundation; with no Invariant
+Sections, with no Front-Cover Texts, and with no Back-Cover Texts.  A copy
+of the license is available
+<a href="http://www.gnu.org/copyleft/fdl.html">here</a>.</p>
+
+</body>
+</html>
