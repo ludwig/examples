@@ -7,7 +7,7 @@ LIBS = -lgsl -lblas -latlas -lm
 
 ##############################################################################
 
-PGMS = j0 lu eig_hil4 dgemm pulse_fft rosenbrock
+PGMS = j0 lu eig_hil4 dgemm pulse_fft rosenbrock bsplines
 
 
 default: $(PGMS)
