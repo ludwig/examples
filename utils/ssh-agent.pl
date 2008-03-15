@@ -18,6 +18,14 @@
 ##
 ## http://ftp.die.net/pub/ssh-agent-restore/ssh-agent-restore
 
+#
+#
+# Possible usage:
+# 
+#   alias restore-ssh-agent='eval `ssh-agent.pl`'
+#
+#
+
 use strict;
 
 my $style = (defined $ARGV[0] && $ARGV[0] eq "-c") ? "-c" : "-s";
