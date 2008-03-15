@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>C++ dlopen mini HOWTO</title><meta name="generator" content="DocBook XSL Stylesheets V1.68.1" /><meta name="description" content="How to dynamically load C++ functions and classes using&#10;      the dlopen API." /></head><body><div class="article" lang="en" xml:lang="en"><div class="titlepage"><div><div><h1 class="title"><a id="id2250700"></a>C++ dlopen mini HOWTO</h1></div><div><div class="author"><h3 class="author"><span class="firstname">Aaron</span> <span class="surname">Isotton</span></h3><div class="affiliation"><div class="address"><p><code class="email">&lt;<a href="mailto:aaron@isotton.com">aaron@isotton.com</a>&gt;</code></p></div></div></div></div><div><p class="pubdate">2006-03-16</p></div><div><div class="revhistory"><table border="1" width="100%" summary="Revision history"><tr><th align="left" valign="top" colspan="3"><b>Revision History</b></th></tr><tr><td align="left">Revision 1.10</td><td align="left">2006-03-16</td><td align="left">AI</td></tr><tr><td align="left" colspan="3">Changed the license from the GFDL to the GPL. Fixed usage
+	    of dlerror; thanks to Carmelo Piccione. Using a virtual destructor
+	    in the example; thanks to Joerg Knobloch. Added Source Code
+	    section. Minor fixes.</td></tr><tr><td align="left">Revision 1.03</td><td align="left">2003-08-12</td><td align="left">AI</td></tr><tr><td align="left" colspan="3">Added reference to the GLib Dynamic Module
+	  Loader.  Thanks to G. V. Sriraam for the pointer.</td></tr><tr><td align="left">Revision 1.02</td><td align="left">2002-12-08</td><td align="left">AI</td></tr><tr><td align="left" colspan="3">Added FAQ.  Minor changes</td></tr><tr><td align="left">Revision 1.01</td><td align="left">2002-06-30</td><td align="left">AI</td></tr><tr><td align="left" colspan="3">Updated virtual destructor explanation.  Minor changes.</td></tr><tr><td align="left">Revision 1.00</td><td align="left">2002-06-19</td><td align="left">AI</td></tr><tr><td align="left" colspan="3">Moved copyright and license section to the
+	beginning.  Added terms section.  Minor changes.</td></tr><tr><td align="left">Revision 0.97</td><td align="left">2002-06-19</td><td align="left">JYG</td></tr><tr><td align="left" colspan="3">Entered minor grammar and sentence level changes.</td></tr><tr><td align="left">Revision 0.96</td><td align="left">2002-06-12</td><td align="left">AI</td></tr><tr><td align="left" colspan="3">Added bibliography.  Corrected explanation of extern
+          functions and variables.</td></tr><tr><td align="left">Revision 0.95</td><td align="left">2002-06-11</td><td align="left">AI</td></tr><tr><td align="left" colspan="3">Minor improvements.</td></tr></table></div></div><div><div class="abstract"><p class="title"><b>Abstract</b></p><p>How to dynamically load C++ functions and classes using
+      the <code class="function">dlopen</code> API.</p></div></div></div><hr /></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="section"><a href="C++-dlopen-mini-HOWTO.html#intro">Introduction</a></span></dt><dd><dl><dt><span class="section"><a href="C++-dlopen-mini-HOWTO.html#copyright">Copyright and License</a></span></dt><dt><span class="section"><a href="C++-dlopen-mini-HOWTO.html#disclaimer">Disclaimer</a></span></dt><dt><span class="section"><a href="C++-dlopen-mini-HOWTO.html#credits">Credits / Contributors</a></span></dt><dt><span class="section"><a href="C++-dlopen-mini-HOWTO.html#feedback">Feedback</a></span></dt><dt><span class="section"><a href="C++-dlopen-mini-HOWTO.html#id2452318">Terms Used in this Document</a></span></dt></dl></dd><dt><span class="section"><a href="C++-dlopen-mini-HOWTO.html#theproblem">The Problem</a></span></dt><dd><dl><dt><span class="section"><a href="C++-dlopen-mini-HOWTO.html#mangling">Name Mangling</a></span></dt><dt><span class="section"><a href="C++-dlopen-mini-HOWTO.html#id2451414">Classes</a></span></dt></dl></dd><dt><span class="section"><a href="C++-dlopen-mini-HOWTO.html#thesolution">The Solution</a></span></dt><dd><dl><dt><span class="section"><a href="C++-dlopen-mini-HOWTO.html#externC"><code class="literal">extern "C"</code></a></span></dt><dt><span class="section"><a href="C++-dlopen-mini-HOWTO.html#loadingfunctions">Loading Functions</a></span></dt><dt><span class="section"><a href="C++-dlopen-mini-HOWTO.html#loadingclasses">Loading Classes</a></span></dt></dl></dd><dt><span class="section"><a href="C++-dlopen-mini-HOWTO.html#source">Source Code</a></span></dt><dt><span class="section"><a href="C++-dlopen-mini-HOWTO.html#faq">Frequently Asked Questions</a></span></dt><dt><span class="section"><a href="C++-dlopen-mini-HOWTO.html#seealso">See Also</a></span></dt><dt><span class="bibliography"><a href="C++-dlopen-mini-HOWTO.html#id2466911">Bibliography</a></span></dt></dl></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="intro"></a>Introduction</h2></div></div></div><p>
+      A question which frequently arises among Unix C++ programmers is
+      how to load C++ functions and classes dynamically using the
+      <code class="function">dlopen</code> API.
+    </p><p>In fact, that is not always simple and needs some
+      explanation.  That's what this mini HOWTO does.</p><p>An average understanding of the <code class="systemitem">C</code>
+      and <code class="systemitem">C++</code> programming language and of the
+      <code class="function">dlopen</code> API is necessary to understand this
+      document.</p><p>This HOWTO's master location is <a href="http://www.isotton.com/howtos/C++-dlopen-mini-HOWTO/" target="_top">http://www.isotton.com/howtos/C++-dlopen-mini-HOWTO/</a>.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="copyright"></a>Copyright and License</h3></div></div></div><p>This document, <span class="emphasis"><em>C++ dlopen mini HOWTO</em></span>, is
+	  copyrighted (c) 2002-2006 by <span class="emphasis"><em>Aaron Isotton</em></span>.
+	  Permission is granted to copy, distribute and/or modify this
+	  document under the terms of the GNU General Public License, Version
+	  2, as published by the Free Software Foundation.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="disclaimer"></a>Disclaimer</h3></div></div></div><p>
+        No liability for the contents of this document can be
+        accepted.  Use the concepts, examples and information at your
+        own risk.  There may be errors and inaccuracies, that could be
+        damaging to your system.  Proceed with caution, and although
+        this is highly unlikely, the author(s) do not take any
+        responsibility.
+      </p><p>
+        All copyrights are held by their by their respective owners,
+        unless specifically noted otherwise.  Use of a term in this
+        document should not be regarded as affecting the validity of
+        any trademark or service mark.  Naming of particular products
+        or brands should not be seen as endorsements.
+      </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="credits"></a>Credits / Contributors</h3></div></div></div><p>
+        In this document, I have the pleasure of acknowledging (in
+        alphabetic order):
+      </p><div class="itemizedlist"><ul type="disc"><li><p>Joy Y Goodreau <code class="email">&lt;<a href="mailto:joyg (at) us.ibm.com">joyg (at) us.ibm.com</a>&gt;</code> for
+            her editing.</p></li><li><p>D. Stimitis <code class="email">&lt;<a href="mailto:stimitis (at) idcomm.com">stimitis (at) idcomm.com</a>&gt;</code>
+            for pointing out a few issues with the formatting and the
+            name mangling, as well as pointing out a few subtleties of
+	    <code class="literal">extern "C"</code>.</p><p>Many unnamed others pointing out errors or giving tips to
+	    improve this howto. You know who you are!</p></li></ul></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="feedback"></a>Feedback</h3></div></div></div><p>
+        Feedback is most certainly welcome for this document. Send
+        your additions, comments and criticisms to the following email
+        address: <code class="email">&lt;<a href="mailto:aaron@isotton.com">aaron@isotton.com</a>&gt;</code>.
+      </p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="id2452318"></a>Terms Used in this Document</h3></div></div></div><div class="variablelist"><dl><dt><span class="term"><code class="function">dlopen</code> API</span></dt><dd><p>The <code class="function">dlclose</code>,
+              <code class="function">dlerror</code>,
+              <code class="function">dlopen</code> and
+              <code class="function">dlsym</code> functions as described in the
+              <code class="literal">dlopen(3)</code> man page.</p><p>Notice that we use
+              “<span class="quote"><code class="function">dlopen</code></span>” to refer to
+              the individual <code class="function">dlopen</code>
+              <span class="emphasis"><em>function</em></span>, and
+              “<span class="quote"><code class="function">dlopen</code> API</span>” to refer
+              to the <span class="emphasis"><em>entire API</em></span>.</p></dd></dl></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="theproblem"></a>The Problem</h2></div></div></div><p>At some time you might have to load a library (and use its
+      functions) at runtime; this happens most often when you are
+      writing some kind of plug-in or module architecture for your
+      program.</p><p>In the C language, loading a library is very simple (calling
+      <code class="function">dlopen</code>, <code class="function">dlsym</code> and
+      <code class="function">dlclose</code> is enough), with C++ this is a bit
+      more complicated.  The difficulties of loading a C++ library
+      dynamically are partially due to <a href="C++-dlopen-mini-HOWTO.html#mangling" title="Name Mangling">name
+      mangling</a>, and partially due to the fact that the
+      <code class="function">dlopen</code> API was written with C in mind, thus
+      not offering a suitable way to load classes.</p><p>Before explaining how to load libraries in C++, let's better
+      analyze the problem by looking at name mangling in more
+      detail. I recommend you read the explanation of name mangling,
+      even if you're not interested in it because it will help you
+      understanding why problems occur and how to solve them.</p><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="mangling"></a>Name Mangling</h3></div></div></div><p>In every C++ program (or library, or object file), all
+        non-static functions are represented in the binary file as
+        <span class="emphasis"><em>symbols</em></span>. These symbols are special text
+        strings that uniquely identify a function in the program,
+        library, or object file.</p><p>In C, the symbol name is the same as the function name:
+        the symbol of <code class="function">strcpy</code> will be
+        <code class="computeroutput">strcpy</code>, and so on. This is
+        possible because in C no two non-static functions can have the
+        same name.</p><p>Because C++ allows overloading (different functions with
+        the same name but different arguments) and has many features C
+        does not — like classes, member functions, exception
+        specifications — it is not possible to simply use the
+        function name as the symbol name.  To solve that, C++ uses
+        so-called <span class="emphasis"><em>name mangling</em></span>, which transforms
+        the function name and all the necessary information (like the
+        number and size of the arguments) into some weird-looking
+        string which only the compiler knows about.  The mangled name
+        of <code class="function">foo</code> might look like
+        <code class="computeroutput">foo@4%6^</code>, for example.  Or it
+        might not even contain the word “<span class="quote">foo</span>”.</p><p> One of the problems with name mangling is that the C++
+        standard (currently [<span class="citation">ISO14882</span>]) does not
+        define how names have to be mangled; thus every compiler
+        mangles names in its own way. Some compilers even change their
+        name mangling algorithm between different versions (notably
+        g++ 2.x and 3.x).  Even if you worked out how your particular
+        compiler mangles names (and would thus be able to load
+        functions via <code class="function">dlsym</code>), this would most
+        probably work with your compiler only, and might already be
+        broken with the next version.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="id2451414"></a>Classes</h3></div></div></div><p>Another problem with the <code class="function">dlopen</code> API
+        is the fact that it only supports loading
+        <span class="emphasis"><em>functions</em></span>. But in C++ a library often
+        exposes a class which you would like to use in your
+        program. Obviously, to use that class you need to create an
+        instance of it, but that cannot be easily done.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="thesolution"></a>The Solution</h2></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="externC"></a><code class="literal">extern "C"</code></h3></div></div></div><p>C++ has a special keyword to declare a function with C
+        bindings: <code class="literal">extern "C"</code>. A function declared
+        as <code class="literal">extern "C"</code> uses the function name as
+        symbol name, just as a C function. For that reason, only
+        non-member functions can be declared as <code class="literal">extern
+        "C"</code>, and they cannot be overloaded.</p><p>Although there are severe limitations, <code class="literal">extern
+        "C"</code> functions are very useful because they can be
+        dynamically loaded using <code class="function">dlopen</code> just like
+        a C function.</p><p>This does <span class="emphasis"><em>not</em></span> mean that functions
+        qualified as <code class="literal">extern "C"</code> cannot contain C++
+        code. Such a function is a full-featured C++ function which
+        can use C++ features and take any type of argument.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="loadingfunctions"></a>Loading Functions</h3></div></div></div><p>In C++ functions are loaded just like in C, with
+        <code class="function">dlsym</code>. The functions you want to load
+        must be qualified as <code class="literal">extern "C"</code> to avoid
+        the symbol name being mangled.</p><div class="example"><a id="id2451545"></a><p class="title"><b>Example 1. Loading a Function</b></p><p>main.cpp:</p><pre class="programlisting">#include &lt;iostream&gt;
+#include &lt;dlfcn.h&gt;
+
+int main() {
+    using std::cout;
+    using std::cerr;
+
+    cout &lt;&lt; "C++ dlopen demo\n\n";
+
+    // open the library
+    cout &lt;&lt; "Opening hello.so...\n";
+    void* handle = dlopen("./hello.so", RTLD_LAZY);
+    
+    if (!handle) {
+        cerr &lt;&lt; "Cannot open library: " &lt;&lt; dlerror() &lt;&lt; '\n';
+        return 1;
+    }
+    
+    // load the symbol
+    cout &lt;&lt; "Loading symbol hello...\n";
+    typedef void (*hello_t)();
+
+    // reset errors
+    dlerror();
+    hello_t hello = (hello_t) dlsym(handle, "hello");
+    const char *dlsym_error = dlerror();
+    if (dlsym_error) {
+        cerr &lt;&lt; "Cannot load symbol 'hello': " &lt;&lt; dlsym_error &lt;&lt;
+            '\n';
+        dlclose(handle);
+        return 1;
+    }
+    
+    // use it to do the calculation
+    cout &lt;&lt; "Calling hello...\n";
+    hello();
+    
+    // close the library
+    cout &lt;&lt; "Closing library...\n";
+    dlclose(handle);
+}</pre><p>hello.cpp:</p><pre class="programlisting">#include &lt;iostream&gt;
+
+extern "C" void hello() {
+    std::cout &lt;&lt; "hello" &lt;&lt; '\n';
+}
+</pre></div><p>The function <code class="function">hello</code> is defined in
+        <code class="filename">hello.cpp</code>as <code class="literal">extern
+          "C"</code>; it is loaded in <code class="filename">main.cpp</code>
+        with the <code class="function">dlsym</code> call. The function must be
+        qualified as <code class="literal">extern "C"</code> because otherwise
+        we wouldn't know its symbol name.</p><div class="warning" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Warning</h3><p>There are two different forms of the
+          <code class="literal">extern "C"</code> declaration: <code class="literal">extern
+            "C"</code> as used above, and <code class="literal">extern "C" {
+            … }</code> with the declarations between the
+          braces. The first (inline) form is a declaration with extern
+          linkage and with C language linkage; the second only affects
+          language linkage. The following two declarations are thus
+          equivalent:
+          
+          </p><div class="informalexample"><pre class="programlisting">extern "C" int foo;
+extern "C" void bar();
+            </pre></div><p>
+            and
+          </p><div class="informalexample"><pre class="programlisting">extern "C" {
+     extern int foo;
+     extern void bar();
+}</pre></div><p>
+
+          As there is no difference between an
+          <code class="literal">extern</code> and a
+          non-<code class="literal">extern</code> <span class="emphasis"><em>function</em></span>
+          declaration, this is no problem as long as you are not
+          declaring any variables. If you declare
+          <span class="emphasis"><em>variables</em></span>, keep in mind that
+
+          </p><div class="informalexample"><pre class="programlisting">extern "C" int foo;</pre></div><p>
+            and
+          </p><div class="informalexample"><pre class="programlisting">extern "C" {
+    int foo;
+}</pre></div><p>
+          
+          are <span class="emphasis"><em>not</em></span> the same thing.</p><p>For further clarifications, refer to
+          [<span class="citation">ISO14882</span>], 7.5, with special attention
+          to paragraph 7, or to [<span class="citation">STR2000</span>],
+          paragraph 9.2.4.</p><p>Before doing fancy things with extern variables, peruse
+          the documents listed in the <a href="C++-dlopen-mini-HOWTO.html#seealso" title="See Also">see
+          also</a> section.</p></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h3 class="title"><a id="loadingclasses"></a>Loading Classes</h3></div></div></div><p>Loading classes is a bit more difficult because we need
+        an <span class="emphasis"><em>instance</em></span> of a class, not just a
+        pointer to a function.</p><p>We cannot create the instance of the class using
+        <code class="literal">new</code> because the class is not defined in the
+        executable, and because (under some circumstances) we don't
+        even know its name.</p><p>The solution is achieved through polymorphism. We define a
+        base, <span class="emphasis"><em>interface</em></span> class with virtual
+        members <span class="emphasis"><em>in the executable</em></span>, and a derived,
+        <span class="emphasis"><em>implementation</em></span> class <span class="emphasis"><em>in the
+          module</em></span>. Generally the interface class is
+        abstract (a class is abstract if it has pure virtual
+        functions).</p><p>As dynamic loading of classes is generally used for
+        plug-ins — which must expose a clearly defined interface
+        — we would have had to define an interface and derived
+        implementation classes anyway.</p><p>Next, while still in the module,  we define two additional helper
+        functions, known as <span class="emphasis"><em>class factory
+	    functions</em></span>. One of these functions creates an instance of 
+	the class and returns a pointer to it. The other function takes a
+        pointer to a class created by the factory and destroys
+        it. These two functions are qualified as <code class="literal">extern
+          "C"</code>.</p><p>To use the class from the module, load the two factory
+        functions using <code class="function">dlsym</code> just <a href="C++-dlopen-mini-HOWTO.html#loadingfunctions" title="Loading Functions">as we loaded the the hello
+        function</a>; then, we can create and destroy as many
+        instances as we wish.</p><div class="example"><a id="id2466316"></a><p class="title"><b>Example 2. Loading a Class</b></p><p>Here we use a generic <code class="classname">polygon</code>
+          class as interface and the derived class
+          <code class="classname">triangle</code> as implementation.</p><p>main.cpp:</p><pre class="programlisting">#include "polygon.hpp"
+#include &lt;iostream&gt;
+#include &lt;dlfcn.h&gt;
+
+int main() {
+    using std::cout;
+    using std::cerr;
+
+    // load the triangle library
+    void* triangle = dlopen("./triangle.so", RTLD_LAZY);
+    if (!triangle) {
+        cerr &lt;&lt; "Cannot load library: " &lt;&lt; dlerror() &lt;&lt; '\n';
+        return 1;
+    }
+
+    // reset errors
+    dlerror();
+    
+    // load the symbols
+    create_t* create_triangle = (create_t*) dlsym(triangle, "create");
+    const char* dlsym_error = dlerror();
+    if (dlsym_error) {
+        cerr &lt;&lt; "Cannot load symbol create: " &lt;&lt; dlsym_error &lt;&lt; '\n';
+        return 1;
+    }
+    
+    destroy_t* destroy_triangle = (destroy_t*) dlsym(triangle, "destroy");
+    dlsym_error = dlerror();
+    if (dlsym_error) {
+        cerr &lt;&lt; "Cannot load symbol destroy: " &lt;&lt; dlsym_error &lt;&lt; '\n';
+        return 1;
+    }
+
+    // create an instance of the class
+    polygon* poly = create_triangle();
+
+    // use the class
+    poly-&gt;set_side_length(7);
+        cout &lt;&lt; "The area is: " &lt;&lt; poly-&gt;area() &lt;&lt; '\n';
+
+    // destroy the class
+    destroy_triangle(poly);
+
+    // unload the triangle library
+    dlclose(triangle);
+}</pre><p>polygon.hpp:</p><pre class="programlisting">#ifndef POLYGON_HPP
+#define POLYGON_HPP
+
+class polygon {
+protected:
+    double side_length_;
+
+public:
+    polygon()
+        : side_length_(0) {}
+
+    virtual ~polygon() {}
+
+    void set_side_length(double side_length) {
+        side_length_ = side_length;
+    }
+
+    virtual double area() const = 0;
+};
+
+// the types of the class factories
+typedef polygon* create_t();
+typedef void destroy_t(polygon*);
+
+#endif</pre><p>triangle.cpp:</p><pre class="programlisting">#include "polygon.hpp"
+#include &lt;cmath&gt;
+
+class triangle : public polygon {
+public:
+    virtual double area() const {
+        return side_length_ * side_length_ * sqrt(3) / 2;
+    }
+};
+
+
+// the class factories
+
+extern "C" polygon* create() {
+    return new triangle;
+}
+
+extern "C" void destroy(polygon* p) {
+    delete p;
+}
+</pre></div><p>There are a few things to note when loading classes:</p><div class="itemizedlist"><ul type="disc"><li><p>You must provide <span class="emphasis"><em>both</em></span> a creation
+            and a destruction function; you must
+            <span class="emphasis"><em>not</em></span> destroy the instances using
+            <code class="literal">delete</code> from inside the executable, but
+            always pass it back to the module. This is due to the fact
+            that in C++ the operators <code class="literal">new</code> and
+            <code class="literal">delete</code> may be overloaded; this would
+            cause a non-matching <code class="literal">new</code> and
+            <code class="literal">delete</code> to be called, which could cause
+            anything from nothing to memory leaks and segmentation
+            faults. The same is true if different standard libraries
+            are used to link the module and the executable.</p></li><li><p>The destructor of the interface class should be
+            virtual in any case.  There <span class="emphasis"><em>might</em></span> be
+            very rare cases where that would not be necessary, but it
+            is not worth the risk, because the additional overhead can
+            generally be ignored.</p><p>If your base class needs no destructor, define an
+            empty (and <code class="literal">virtual</code>) one anyway;
+            otherwise you <span class="emphasis"><em>will have problems</em></span>
+            sooner or later; I can guarantee you that.  You can read
+            more about this problem in the comp.lang.c++ FAQ at <a href="http://www.parashift.com/c++-faq-lite/" target="_top">http://www.parashift.com/c++-faq-lite/</a>, in
+            section 20.</p></li></ul></div></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="source"></a>Source Code</h2></div></div></div><p>You can download all the source code presented in this howto as an
+	  archive: <a href="http://www.isotton.com/howtos/C++-dlopen-mini-HOWTO/examples.tar.gz" target="_top">examples.tar.gz</a>.</p></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="faq"></a>Frequently Asked Questions</h2></div></div></div><div class="qandaset"><dl><dt>1. <a href="C++-dlopen-mini-HOWTO.html#id2450927">I'm using Windows and I can't find the
+          dlfcn.h header file!  What's the problem?</a></dt><dt>2. <a href="C++-dlopen-mini-HOWTO.html#id2466707">Is there some kind of dlopen-compatible
+	    wrapper for the Windows LoadLibrary
+	    API?</a></dt></dl><table border="0" summary="Q and A Set"><col align="left" width="1%" /><tbody><tr class="question"><td align="left" valign="top"><a id="id2450927"></a><a id="id2450929"></a><b>1.</b></td><td align="left" valign="top"><p>I'm using Windows and I can't find the
+          <code class="filename">dlfcn.h</code> header file!  What's the problem?</p></td></tr><tr class="answer"><td align="left" valign="top"><b></b></td><td align="left" valign="top"><p>The problem is that Windows doesn't have the
+		<code class="function">dlopen</code> API, and thus there is no
+          <code class="filename">dlfcn.h</code> header.  There is a similar API
+          around the <code class="function">LoadLibrary</code> function, and
+          most of what is written here applies to it, too. Please refer to the
+	  <a href="http://msdn.microsoft.com/" target="_top">Microsoft Developer Network
+	      Website</a> for more information.</p></td></tr><tr class="question"><td align="left" valign="top"><a id="id2466707"></a><a id="id2466709"></a><b>2.</b></td><td align="left" valign="top"><p>Is there some kind of <code class="function">dlopen</code>-compatible
+	    wrapper for the Windows <code class="function">LoadLibrary</code>
+	    API?</p></td></tr><tr class="answer"><td align="left" valign="top"><b></b></td><td align="left" valign="top"><p>I don't know of any, and I don't think there'll ever be one
+	    supporting all of <code class="function">dlopen</code>'s options.</p><p>There are alternatives though: libtltdl (a part of libtool),
+	    which wraps a variety of different dynamic loading APIs, among
+	    others <code class="function">dlopen</code> and
+	    <code class="function">LoadLibrary</code>.  Another one is the <a href="http://developer.gnome.org/doc/API/glib/glib-dynamic-loading-of-modules.html" target="_top">Dynamic
+	      Module Loading functionality of GLib</a>.  You can use one
+	    of these to ensure better possible cross-platform compatibility.
+	    I've never used any of them, so I can't tell you how stable they
+	    are and whether they really work.</p><p>You should also read section 4, “<span class="quote">Dynamically
+          Loaded (DL) Libraries</span>”, of the <a href="http://www.dwheeler.com/program-library" target="_top">Program Library
+            HOWTO</a> for more techniques to load libraries and
+          create classes independently of your platform.</p></td></tr></tbody></table></div></div><div class="section" lang="en" xml:lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="seealso"></a>See Also</h2></div></div></div><div class="itemizedlist"><ul type="disc"><li><p>The <code class="function">dlopen(3)</code> man page. It explains
+          the purpose and the use of the <code class="function">dlopen</code>
+          API.</p></li><li><p>The article <a href="http://www.linuxjournal.com/article.php?sid=3687" target="_top">
+            <em class="citetitle">Dynamic Class Loading for C++ on
+              Linux</em></a> by James Norton published on the
+          <a href="http://www.linuxjournal.com/" target="_top">Linux
+            Journal</a>.</p></li><li><p>Your favorite C++ reference about <code class="literal">extern
+            "C"</code>, inheritance, virtual functions,
+          <code class="literal">new</code> and <code class="literal">delete</code>. I
+          recommend [<span class="citation">STR2000</span>].</p></li><li><p>[<span class="citation">ISO14882</span>]</p></li><li><p>The <a href="http://www.dwheeler.com/program-library" target="_top">Program Library
+            HOWTO</a>, which tells you most things you'll ever need
+          about static, shared and dynamically loaded libraries and how
+          to create them.  Highly recommended.</p></li><li><p>The <a href="http://tldp.org/HOWTO/GCC-HOWTO/index.html" target="_top">Linux GCC
+            HOWTO</a> to learn more about how to create libraries
+            with GCC.</p></li></ul></div></div><div class="bibliography"><div class="titlepage"><div><div><h2 class="title"><a id="id2466911"></a>Bibliography</h2></div></div></div><div class="bibliomixed"><p class="bibliomixed">[<span class="abbrev">ISO14482</span>] 
+       <span class="title">ISO/IEC 14482-1998 — The
+        C++ Programming Language</span>. <span class="releaseinfo">Available as
+        PDF and as printed book from <a href="http://webstore.ansi.org/" target="_top">http://webstore.ansi.org/</a>.</span>
+    </p></div><div class="bibliomixed"><p class="bibliomixed">[<span class="abbrev">STR2000</span>] 
+      
+      <span class="author"><span class="surname">Stroustrup</span><span class="firstname">Bjarne</span></span>
+      <span class="title">The C++ Programming Language</span>, <span class="edition">Special
+        Edition</span>.
+      ISBN <span class="isbn">0-201-70073-5</span>.
+      <span class="publishername">Addison-Wesley</span>.
+    </p></div></div></div></body></html>
