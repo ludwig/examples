@@ -12,3 +12,11 @@ Check these out at some point
     dlopen examples
     http://github.com/zacheryph/examples/tree/master/c-cpp/dlopen
     http://github.com/zacheryph/examples/tree/master/c-cpp/dlopen2
+
+    postgresql examples
+    ~/src/postgresql-8.2.4/src/test/examples/*.c
+
+    Low Level Virtual Machine (LLVM)
+    http://llvm.org/docs/GettingStarted.html
+
+
