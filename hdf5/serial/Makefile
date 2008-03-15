@@ -15,6 +15,7 @@ LIBS = -lhdf5
 
 TARGETS = \
 	write.exe \
+	read.exe \
 	group.exe
 
 all: $(TARGETS)
