@@ -6,7 +6,9 @@ TARGETS = \
 	indirect \
 	matmult \
 	numinquire \
+	pick \
 	qcd \
+	rangexpr \
 	reduce \
 	stencil
 
