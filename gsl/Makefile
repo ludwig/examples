@@ -7,7 +7,7 @@ LIBS = -lgsl -lblas -latlas -lm
 
 ##############################################################################
 
-PGMS = j0 lu
+PGMS = j0 lu eig_hil4
 
 
 default: $(PGMS)
