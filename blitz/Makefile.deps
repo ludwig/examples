@@ -1,0 +1,12 @@
+TARGETS = \
+	cfd \
+	deriv \
+	erf \
+	fixed \
+	indirect \
+	matmult \
+	numinquire \
+	qcd \
+	reduce \
+	stencil
+
