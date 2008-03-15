@@ -1,5 +1,5 @@
 CXX = g++
-LIBS = -lginac
+LIBS = -lginac -lcln
 PGMS = hello hermite
 
 
