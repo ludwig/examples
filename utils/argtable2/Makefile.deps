@@ -1,0 +1,15 @@
+TARGETS = \
+	myprog \
+	echo \
+	rm \
+	uname \
+	mv \
+	ls \
+	multisyntax \
+	hasoptvalue \
+	callbacks \
+	argcustom \
+
+OBJFILES = \
+	argxxx.o \
+
