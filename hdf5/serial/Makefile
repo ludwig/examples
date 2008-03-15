@@ -14,10 +14,8 @@ LIBS = -lhdf5
 ##############################################################################
 
 TARGETS = \
-	write.exe
-
-OBJS = \
-	write.o
+	write.exe \
+	group.exe
 
 all: $(TARGETS)
 
