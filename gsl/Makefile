@@ -1,0 +1,21 @@
+CC = gcc
+
+#LIBS = -lgsl -lgslblas -lm
+#LIBS = -lgsl -lcblas -lm
+#LIBS = -lgsl -lcblas -latlas -lm
+LIBS = -lgsl -lblas -latlas -lm
+
+##############################################################################
+
+PGMS = j0
+
+
+default: $(PGMS)
+
+%: %.c
+	$(CC) $^ $(LIBS) -o $@ 
+
+clean:
+	rm -f $(PGMS)
+
+.PHONY: clean
