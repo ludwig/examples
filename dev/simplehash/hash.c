@@ -61,7 +61,7 @@ static unsigned int strhash(const char *str)
 {
     int c;
     int hash = 5381;
-    while (c = *str++)
+    while ((c = *str++))
         hash = hash * 33 + c;
     return hash == 0 ? 1 : hash;
 }
@@ -73,6 +73,7 @@ hash * hash_new(unsigned int capacity) {
 
     capacity /= load_factor;
 
+    sind = 0;
     for (i=0; i < sizes_count; i++) 
         if (sizes[i] > capacity) { sind = i; break; }
 
