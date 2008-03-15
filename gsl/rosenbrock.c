@@ -1,5 +1,15 @@
 // http://www.gnu.org/software/gsl/manual/html_node/Example-programs-for-Multidimensional-Root-finding.html
 
+/*
+ * This program solves the Rosenbrock system of equations,
+ *
+ *  f_1(x,y) = a(1 - x)
+ *  f_2(x,y) = b(y - x^2)
+ *
+ * with a=1, b = 10. The solution of this system lies
+ * at (x,y) = (1,1) in a narrow valley.
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <gsl/gsl_vector.h>
