@@ -1,4 +1,12 @@
-This repository consists of useful code examples that I've
-written or may have come across.
+Examples Repository
+===================
+This project consists of code examples for using various libraries,
+or frameworks, that I have written or may have come across while
+reading documentation. Some of these examples may be useful as starting
+points for new projects, but for the most part they're meant as
+exploratory pieces.
 
-See also: http://github.com/zacheryph/examples/tree/master
+
+See Also
+========
+http://github.com/zacheryph/examples/tree/master
