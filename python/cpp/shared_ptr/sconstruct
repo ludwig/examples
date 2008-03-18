@@ -1,0 +1,10 @@
+#scons build script
+SharedLibrary( target=r'shared_ptr'
+    , source=[ r'solution.cpp' ]
+    , LIBS=[ r"boost_python" ]
+    , LIBPATH=[ r"/home/roman/boost_cvs/bin",r"" ]
+    , CPPPATH=[ r"/home/roman/boost_cvs"
+              , r"/usr/include/python2.4" ]
+    , SHLIBPREFIX=''
+    , SHLIBSUFFIX='.so'
+)

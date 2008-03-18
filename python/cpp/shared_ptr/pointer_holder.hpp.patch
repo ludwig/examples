@@ -1,0 +1,99 @@
+*** pointer_holder.hpp.orig	2006-11-24 22:39:59.000000000 +0200
+--- pointer_holder.hpp	2006-12-08 20:05:58.000000000 +0200
+***************
+*** 35,40 ****
+--- 35,42 ----
+  
+  #  include <boost/detail/workaround.hpp>
+  
++ #  include <boost/type_traits/remove_const.hpp>
++ 
+  namespace boost { namespace python {
+  
+  template <class T> class wrapper;
+***************
+*** 122,146 ****
+  template <class Pointer, class Value>
+  void* pointer_holder<Pointer, Value>::holds(type_info dst_t, bool null_ptr_only)
+  {
+      if (dst_t == python::type_id<Pointer>()
+          && !(null_ptr_only && get_pointer(this->m_p))
+      )
+          return &this->m_p;
+! 
+!     Value* p = get_pointer(this->m_p);
+      if (p == 0)
+          return 0;
+      
+      if (void* wrapped = holds_wrapped(dst_t, p, p))
+          return wrapped;
+      
+!     type_info src_t = python::type_id<Value>();
+      return src_t == dst_t ? p : find_dynamic_type(p, src_t, dst_t);
+  }
+  
+  template <class Pointer, class Value>
+  void* pointer_holder_back_reference<Pointer, Value>::holds(type_info dst_t, bool null_ptr_only)
+  {
+      if (dst_t == python::type_id<Pointer>()
+          && !(null_ptr_only && get_pointer(this->m_p))
+      )
+--- 124,153 ----
+  template <class Pointer, class Value>
+  void* pointer_holder<Pointer, Value>::holds(type_info dst_t, bool null_ptr_only)
+  {
++     typedef typename boost::remove_const< Value >::type NonConstValue;
++     
+      if (dst_t == python::type_id<Pointer>()
+          && !(null_ptr_only && get_pointer(this->m_p))
+      )
+          return &this->m_p;
+!     
+!     Value* tmp = get_pointer(this->m_p);
+!     NonConstValue* p = const_cast<NonConstValue*>( tmp );
+      if (p == 0)
+          return 0;
+      
+      if (void* wrapped = holds_wrapped(dst_t, p, p))
+          return wrapped;
+      
+!     type_info src_t = python::type_id<NonConstValue>();
+      return src_t == dst_t ? p : find_dynamic_type(p, src_t, dst_t);
+  }
+  
+  template <class Pointer, class Value>
+  void* pointer_holder_back_reference<Pointer, Value>::holds(type_info dst_t, bool null_ptr_only)
+  {
++     typedef typename boost::remove_const< Value >::type NonConstValue;
++     
+      if (dst_t == python::type_id<Pointer>()
+          && !(null_ptr_only && get_pointer(this->m_p))
+      )
+***************
+*** 149,160 ****
+      if (!get_pointer(this->m_p))
+          return 0;
+      
+!     Value* p = get_pointer(m_p);
+      
+      if (dst_t == python::type_id<held_type>())
+          return p;
+  
+!     type_info src_t = python::type_id<Value>();
+      return src_t == dst_t ? p : find_dynamic_type(p, src_t, dst_t);
+  }
+  
+--- 156,168 ----
+      if (!get_pointer(this->m_p))
+          return 0;
+      
+!     Value* tmp = get_pointer(this->m_p);
+!     NonConstValue* p = const_cast<NonConstValue*>( tmp );
+      
+      if (dst_t == python::type_id<held_type>())
+          return p;
+  
+!     type_info src_t = python::type_id<NonConstValue>();
+      return src_t == dst_t ? p : find_dynamic_type(p, src_t, dst_t);
+  }
+  

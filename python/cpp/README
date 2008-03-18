@@ -1,0 +1,12 @@
+From
+http://www.language-binding.net/pyplusplus/troubleshooting_guide/lessons_learned.html
+http://www.language-binding.net/pyplusplus/troubleshooting_guide/easy_extending_guide/easy_extending_guide.html
+http://www.language-binding.net/pyplusplus/troubleshooting_guide/smart_ptrs/smart_ptrs.zip
+http://www.language-binding.net/pyplusplus/troubleshooting_guide/shared_ptr/shared_ptr.zip
+http://www.language-binding.net/pyplusplus/troubleshooting_guide/automatic_conversion/automatic_conversion.zip
+http://www.language-binding.net/pyplusplus/troubleshooting_guide/exceptions/exceptions.zip
+
+
+Also, see
+    http://www.boost.org/libs/python/doc/
+    http://wiki.cython.org/WrappingCorCpp

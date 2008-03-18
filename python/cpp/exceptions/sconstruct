@@ -1,0 +1,10 @@
+#scons build script
+SharedLibrary( target=r'my_exceptions'
+    , source=[ r'exceptions.cpp' ]
+    , LIBS=[ r"boost_python" ]
+    , LIBPATH=[ r"/home/roman/boost_cvs/libs/python/build/bin-stage" ]
+    , CPPPATH=[ r"/home/roman/boost_cvs"
+              , r"/usr/include/python2.4" ]
+    , SHLIBPREFIX=''
+    , SHLIBSUFFIX='.so'
+)
