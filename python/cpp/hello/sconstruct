@@ -1,0 +1,10 @@
+# scons build script
+SharedLibrary(
+      target='hello'
+    , source=[ r'hello.cpp' ]
+    , LIBS=[ r"boost_python" ]
+    , LIBPATH=[ r"" ]
+    , CPPPATH=[ r"/usr/include/python2.4" ]
+    , SHLIBPREFIX=''
+    , SHLIBSUFFIX='.so'
+)

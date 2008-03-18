@@ -1,0 +1,9 @@
+Finally compiled example from documentation
+
+    http://www.boost.org/libs/python/doc/tutorial/doc/html/index.html
+
+
+How in the world do you get their jam build system working?
+
+Well, SCons worked out better in the end.
+
