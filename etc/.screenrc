@@ -1,0 +1,130 @@
+# Must-have settings
+startup_message off
+caption always
+msgwait 15
+msgminwait 2
+defscrollback 5000
+defflow off
+vbell on
+
+#password XXXXXXXXXXXXX
+
+
+# Other settings
+defbce on
+zombie ko
+
+# let ascii mouse work in vim
+#term screen
+#term xterm
+term xterm-color
+#termcapinfo xterm|rxvt ti@:te@
+termcapinfo xterm-color|rxvt ti@:te@
+
+
+# From man page
+#	Supported encodings are eucJP, SJIS, eucKR, eucCN, Big5,  GBK,  KOI8-R,
+#	CP1251,  UTF-8,  ISO8859-2, ISO8859-3, ISO8859-4, ISO8859-5, ISO8859-6,
+#	ISO8859-7, ISO8859-8, ISO8859-9, ISO8859-10, ISO8859-15, jis.
+#defencoding eucJP
+#encoding SJIS
+
+# Configure shell stuff
+# Make sure to export PROMPT_COMMAND='echo -n -e "\033k\033\134"'
+# in ~/.bashrc file so that window titles can be updated properly
+# (alternatively, use setenv to set this environment variable)
+setenv PROMPT_COMMAND 'echo -n -e "\033k\033\134"'
+shell $SHELL
+#shelltitle ' |zsh'
+#shelltitle '> |csh'
+#shelltitle '$ |bash'
+shelltitle '$ |'
+
+# Configure activity string
+activity "Activity in window %n%="
+
+# Configure caption line
+caption splitonly
+caption string "%?%F%{.c.}%?%3n %t%? [%h]%?"
+#caption string "%?%F%{.R.}%?%3n %t%? [%h]%?"
+#caption string "%c Screen: %w %?(%h)%?"
+#caption string "%{rk} %c %{dd} %{+b M}%n  %{-b dd}%-w%{+b B.}%n* %t%{-}%+w%<"
+
+# Play with the windowlist display a little
+#windowlist title "Num Name HardStatus%=Flags"
+#windowlist string "%3n %t %h%=%f"
+
+# Configure hardstatus line (refer to /^STRING ESCAPES in 'man screen')
+hardstatus off # Whether to send messages to hardstatus line or not
+#hardstatus alwayslastline "%w"
+#hardstatus alwayslastline " %c | %Y%m%d |  %w"
+#hardstatus alwayslastline " %m%d %c \033[42;30m %w \033[m"
+#hardstatus alwayslastline "%{yb} %d/%m %c %{gb} %w %{= dd}"
+#hardstatus alwayslastline "%{yb} %l %d/%m %c %{gb} %w %{dd}"
+#hardstatus alwayslastline "%-Lw%{= BW}%50>%n%f* %t%{-}%+Lw%<"
+#hardstatus alwayslastline "%{.bW}%-w%{.rW}%n %t%{-}%+w %=%{..G} %H %{..Y} %m/%d %C%a "
+#hardstatus alwayslastline "%{=b bb} %m/%d %c %{-}| %-Lw%{=b y}%50L>%n%f [%t]%{-}%+Lw%<"
+hardstatus alwayslastline "%{=b bb} %Y/%m/%d %0C%A %{-}| %-Lw%{=b y}%50L>%n%f %t%{-}%+Lw%<"
+#hardstatus alwayslastline "%-Lw%{=b y}%50L>%n%f %t%{-}%+Lw%<%-20=%{=b bb} %Y/%m/%d %0C%A "
+
+# emulate .logout message
+pow_detach_msg "Screen session of \$LOGNAME \$:cr:\$:nl:terminated...\n[NO CARRIER]"
+
+# Use the function keys F7 and F8 to cycle backwards/forwards
+# in the list of existing windows:
+bindkey -k k7 prev
+bindkey -k k8 next
+
+# Use the following to switch between regions
+bind w focus down
+bind ^w focus up
+bind s split
+bind o only
+bind Q only
+bind ^h focus bottom
+bind ^j focus down
+bind ^k focus up
+bind ^l focus top
+bind = resize =
+bind + resize +1
+bind - resize -1
+
+# To select screens 10-19 (with ctrl-a shift+N)
+bind  ) select 10
+bind  ! select 11
+bind  @ select 12
+bind \# select 13
+bind \$ select 14
+bind  % select 15
+bind \^ select 16
+bind  & select 17
+bind  * select 18
+bind  ) select 19
+
+# other keybindings
+bind ^t time
+bind W windows
+
+# some command bindings
+bind \047 windowlist -b
+bind m screen -t mutt mutt
+bind e screen -t emacs emacs -nw
+bind F eval "screen -t ytalk ytalk -x faria"
+bind R screen -t '% |root:' su -
+bind G screen -t 'Google' links www.google.com
+
+# use urlview to scrap the screen
+bind ^B eval "hardcopy_append off" "hardcopy -h $HOME/tmp/screen-urlview" "screen urlview $HOME/tmp/screen-urlview"
+
+
+# Initial state (startup screens)
+screen 2
+screen 3
+#screen 4
+#screen 5
+#screen 6
+screen 7
+screen 8
+screen 9
+screen 0
+screen -M 1
