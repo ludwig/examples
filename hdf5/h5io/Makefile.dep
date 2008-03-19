@@ -1,0 +1,6 @@
+h5array.o: h5array.c h5io.h
+h5attr.o: h5attr.c h5io.h
+h5dset.o: h5dset.c h5io.h
+h5file.o: h5file.c h5io.h
+h5group.o: h5group.c h5io.h split.h
+split.o: split.c split.h
