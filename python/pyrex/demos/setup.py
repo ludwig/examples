@@ -7,6 +7,7 @@ setup(
     name='Demos',
     ext_modules=[
         Extension("primes", ["primes.pyx"]),
+        Extension("numeric_demo", ["numeric_demo.pyx"]),
         ],
     cmdclass={'build_ext':build_ext}
 )
