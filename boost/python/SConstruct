@@ -1,0 +1,14 @@
+boost_prefix="/usr"
+boost_libdir=boost_prefix + "/lib"
+
+env = Environment(
+    CPPPATH=["/usr/include/python2.4",boost_prefix],
+    CXXFLAGS="-ftemplate-depth-100 -DBOOST_PYTHON_DYNAMIC_LIB",
+    LIBPATH=[boost_libdir, "/usr/lib/python2.4/config"],
+    LIBS=["boost_python"],
+    SHLIBPREFIX="",
+)
+Default('.')
+env.SharedLibrary(target='hello', source=['hello.cpp',])
+
+# vim:syntax=python
