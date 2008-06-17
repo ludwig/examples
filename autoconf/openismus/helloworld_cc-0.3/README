@@ -1,0 +1,7 @@
+helloworld_cc
+-------------
+
+This project shows the basics of using automake and autoconf for C++ projects.
+It is a 'deep' project, meaning that it has source code organised into sub-projects. This is not well explained normally, but it is essential for properly organised source code.
+
+This project accompanies the 'Using autoconf and automake with C++' document at http:/www.murrayc.com

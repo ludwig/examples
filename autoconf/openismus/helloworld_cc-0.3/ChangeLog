@@ -1,0 +1,12 @@
+0.3.0:
+	
+2002-12-03  Murray Cumming  <murrayc@usa.net>
+
+	* Renamed configure.in to configure.ac
+	* Added autogen.sh, for convenience.
+	* configure.ac: Changed AC_PROG_RANLIB to AC_PROG_LIBTOOL
+
+Murray Cumming <murrayc@usa.net> 27th April 2000
+* Version 0.2
+* Changed name in AM_INIT_AUTOMAKE in configure.in to helloworld_cc from hello.
+* Checked with latest gcc (Redhat 6.2 + gcc 2.95): No need for 'automake -i' anymore.

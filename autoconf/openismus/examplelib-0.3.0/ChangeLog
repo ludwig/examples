@@ -1,0 +1,4 @@
+2002-01-21  Murray Cumming  <murrayc@usa.net>
+
+	* Now uses pkg-config.
+
