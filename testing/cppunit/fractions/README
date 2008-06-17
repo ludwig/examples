@@ -1,0 +1,11 @@
+CppUnit - Tutorial
+------------------
+
+To compile with GNU make under cygwin or unix-like systems
+only type "make" at the shell and start the program with "./ftest".
+
+This tutorial can be found under the tutorial-secion at www.EvoComp.de.
+
+(http://www.EvoComp.de/tutorials/tutorium_cppunit/howto_tutorial_cppunit_en.html)
+Please mail me if you have got any questions or suggestions (e-mail-address can
+be found in the contact-section of www.EvoComp.de).
