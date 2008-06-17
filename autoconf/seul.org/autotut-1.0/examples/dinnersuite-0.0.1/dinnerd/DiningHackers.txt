@@ -1,0 +1,205 @@
+
+                        THE DINING HACKERS PROTOCOL
+
+                             April 14th 2001
+                       Felipe Bergo <bergo@seul.org>
+                       
+    "You may have read April 1st RFCs, but no text ever came so close
+     to a February-30th-RFC as this"
+
+
+     ABSTRACT. This document describes a protocol meant to provide
+     a centralized service for clients ('dining hackers') who are
+     fighting (more literally than in previous similar protocols)
+     for a finite set of resources.
+
+
+     0. INTRODUCTION
+
+     The Dining Hacker protocol implements a situation similar
+     to that shown in Dijkstra's Dining Philosophers paper.
+     A finite set of clients with different personalities are 
+     competing for a set of resources (chopsticks).
+     
+     The situation is a round table with at N hackers, N <= 256.
+     There are always N chopsticks and N chinese food boxes
+     on the table. Hackers wish to eat, but one must first acquire
+     the two chopsticks adjacent to his own position to start
+     eating. How much time and how frequently a hacker will eat
+     depends on the client. But conflict resolution is arbitrated
+     by the server, using RPG-like character sheets.
+
+     The protocol itself is divided into 2 sub-protocols, each running
+     on a TCP connection.
+
+     1. CLIENT SUB-PROTOCOL
+
+     The Client Sub-Protocol is used to connect a client (hacker)
+     to the dinner table (server). The client connects to
+     TCP 8081 of the server, which will send a greeting message
+     and wait for requests.
+
+     The greeting message is terminated by a newline (0x0a) and
+     the only requirement is that it contains the "DINNERD"
+     string (in uppercase characters). Usually it will contain
+     also a version number.
+
+     The following operations can be triggered by the client:
+
+
+     GROUP 1 : SET PROPERTIES
+     Each client has an associated "character sheet", with 5
+     properties: name (up to 16 octets), ST (Strength, 1 octet),
+     DX (Dexterity, 1 octet), Aggr (Aggressivity, 1 octet) and
+     HT (Health, 1 octet). All properties are read/write,
+     except HT which starts at 100 and is read only.
+
+     Operations
+       1.1 SET NAME
+           Client sends 0x30 (up to 16 octets) 0x0a.
+           The command always succeeds.
+       1.2 SET ST
+           Client sends 0x31 ST-octet
+           The command always succeeds.
+       1.3 SET DX
+           Client sends 0x32 ST-octet
+           The command always succeeds.
+       1.4 SET Aggr
+           Client sends 0x33 Aggr-octet
+           The command always succeeds.
+
+     GROUP 2: GET PROPERTIES
+
+     Operations
+       2.1 GET NAME
+           Client sends  0x3f 0x30     ("?0")
+           Server replies with 16 octets. The name is
+           a zero-terminated string.
+           The command always succeeds.
+       2.2 GET ST
+           Client sends  0x3f 0x31     ("?1")
+           Server replies with the ST octet.
+           The command always succeeds.
+       2.3 GET DX
+           Client sends  0x3f 0x32     ("?2")
+           Server replies with the DX octet.
+           The command always succeeds.
+       2.4 GET Aggr
+           Client sends  0x3f 0x33     ("?3")
+           Server replies with the Aggr octet.
+           The command always succeeds.
+       2.5 GET HT
+           Client sends  0x3f 0x34     ("?4")
+           Server replies with the HT octet.
+           The command always succeeds.
+
+      GROUP 3: RESOURCE USAGE
+
+       3.1 REQUEST LEFT CHOPSTICK
+           Client sends 0x4c           ("L")
+           Server replies 0x30 on failure, 0x31 on success.
+       3.2 REQUEST RIGHT CHOPSTICK
+           Client sends 0x52           ("R")
+           Server replies 0x30 on failure, 0x31 on success.
+       3.3 DROP LEFT CHOPSTICK
+           Client sends 0x6c           ("l")
+           The command always succeds.
+       3.4 DROP RIGHT CHOPSTICK
+           Client sends 0x72           ("r")
+           The command always succeds.
+
+      GROUP 4: OTHER
+
+       4.1 SUICIDE
+           Client sends 0x51           ("Q")
+           The command always suceeds. The hacker and his
+           chopstick are removed from the table.
+           Disconnecting has the same effect.
+
+     2. INITIALIZATION
+
+        The character sheet is generated from random bits upon
+        connection. Until the client supplies data with SET
+        requests, he'll have a random 3-character name, HT 100,
+        ST in [5,15], DX in [5,15] and Aggr in [5,15].
+
+
+     3. RESOURCE MANAGEMENT
+
+        The great difference from the Dining Philosophers
+        situation is that hackers have an attitude. They won't
+        starve while the neighbour is eating happily. They'll
+        attack their neighbours phisically with punches.
+
+        The ST, Aggr and DX stats shape the behavior. A
+        situation when a hacker may hit a neighbour is
+        called a hit roll, and is performed by the server.
+        Clients only find out they've been hit by checking the
+        HT with GET requests.
+
+        A hit roll is performed when a hacker already has 
+        acquired a chopstick, tries to acquire the second
+        and fails. The hacker is anger at the neighbour who
+        caused the request to fail, and the server performs
+        a hit roll.
+
+        First the server rolls 3D6 (3 6-faced dice) against
+        the hacker's Aggr parameter. If the roll is greater
+        than Aggr, the hacker wasn't upset enough, and won't
+        proceed with the hit.
+
+        If the hacker proceeds with the hit, the server
+        rolls a dexterity dispute between the attacker
+        and the defender, with a +2 innitiative bonus for the
+        attacker. The roll is
+
+        Attacker:  Attacker.DX + 1D6 + 2
+        Defender:  Defender.DX + 1D6
+
+        If the defender's result is greater or equal than the
+        attacker's result, he successfully dodged the punch, and
+        the hit roll is over.
+
+        Else, the punch hit, and the server will roll the
+        damage, which is
+
+                    (Attacker.ST x 1D6) / 3
+
+        The damage is subtracted from the defender's HT.
+        A character is knocked out if his HT reaches 0 or
+        less. Knocked out characters are disconnected from
+        the server, and both the character and his associated
+        chopstick are removed from the table.
+
+     4. STARVATION
+
+        The starvation timeout is ST x 3 seconds. The server
+        knocks off starved hackers.
+
+     5. OBSERVATION SUB-PROTOCOL
+
+        The server also provides a secondary protocol for
+        processes willing to observe the global table
+        situation. The watcher makes a TCP connection
+        to port 8082. There's no greeting message, the
+        server starts listening for requests immediatelly.
+        To request a global overview the client sends
+        any octet to the server.
+
+        The server replies with a table snapshot made of
+
+        1 octet   - H# : NUMBER OF ACTIVE HACKERS
+
+        and H# hacker state messages. Adjacent messages
+        represent adjacent hackers. Each message is 21
+        octets long:
+
+        16 octets    - hacker name, zero-terminated
+         1 octet     - ST
+         1 octet     - HT
+         1 octet     - DX
+         1 octet     - Aggr
+         1 octet     - eating flag, non-zero if the hacker
+                       currently has two chopsticks in his
+                       possession, zero otherwise.
+        

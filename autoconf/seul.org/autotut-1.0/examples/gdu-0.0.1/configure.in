@@ -1,0 +1,26 @@
+AC_INIT(gdu.cc)
+AM_INIT_AUTOMAKE(gdu,0.0.1)
+AM_CONFIG_HEADER(config.h)
+
+CXXFLAGS=
+
+AC_PROG_CC
+AC_PROG_CXX
+AC_PROG_INSTALL
+AC_PROG_MAKE_SET
+
+AC_HEADER_STDC
+
+dnl it will define GTK_CFLAGS and GTK_LIBS for us,
+dnl comes from gtk.m4 (aclocal will find it for us)
+AM_PATH_GTK(1.2.6)
+
+AC_LANG_CPLUSPLUS dnl else AM_PATH_GTK blows up
+
+AC_CHECK_LIB(stdc++, main,,AC_MSG_ERROR(gdu requires libstdc++))
+AC_CHECK_HEADERS(stack,,AC_MSG_WARN(STL classes missing ?))
+AC_CHECK_HEADERS(string,,AC_MSG_WARN(STL classes missing ?))
+AC_CHECK_HEADERS(list,,AC_MSG_WARN(STL classes missing ?))
+AC_CHECK_HEADERS(vector,,AC_MSG_WARN(STL classes missing ?))
+
+AC_OUTPUT(Makefile)

@@ -1,0 +1,42 @@
+.TH HUNGRYHACKER 1 "14 Apr 2001" "Free Software" "User Manuals"
+.SH NAME
+hungryhacker \- Dining Hackers Protocol Client
+.SH SYNOPSIS
+hungryhacker [-q] [-h hostname] [-p port] [-n name]
+             [-s ST] [-d DX] [-a AG]
+
+.SH DESCRIPTION
+hungryhacker implements a basic client for the Dining Hackers
+protocol. It will connect to a dinnerd(8) server and register
+itself as a dining hacker. The parameters not supplied on
+command line are generated randomically.
+
+.SH "COMMAND LINE OPTIONS"
+.IP -q
+quiet mode. suppress most messages to stdout.
+.IP "-h hostname"
+chooses a dinnerd host to connect to. The default is
+localhost.
+.IP "-p port"
+chooses the TCP port to connect to. The default is
+8081.
+.IP "-n name"
+sets the hacker name. When not supplied, a 3-letter
+username is generated.
+.IP "-s ST"
+sets the strength. Works better if greater than 5,
+less than 15. See the Dining Hackers protocol
+spec for more information.
+.IP "-d DX"
+sets the dexterity. Better range is 5 to 15.
+.IP "-a AG"
+sets the aggressivity. Better range is 5 to 15.
+
+.SH AUTHORS
+hungryhacker (and the Dining Hackers protocol) was implemented
+and created by Felipe Bergo <bergo@seul.org> as an example
+for a tutorial.
+
+.SH "SEE ALSO"
+\fBdinnerd\fR(8)
+

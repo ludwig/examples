@@ -1,0 +1,26 @@
+/* config.h.in.  Generated automatically from configure.in by autoheader.  */
+
+/* Define if you have the ANSI C header files.  */
+#undef STDC_HEADERS
+
+/* Define if you have the <list> header file.  */
+#undef HAVE_LIST
+
+/* Define if you have the <stack> header file.  */
+#undef HAVE_STACK
+
+/* Define if you have the <string> header file.  */
+#undef HAVE_STRING
+
+/* Define if you have the <vector> header file.  */
+#undef HAVE_VECTOR
+
+/* Define if you have the stdc++ library (-lstdc++).  */
+#undef HAVE_LIBSTDC__
+
+/* Name of package */
+#undef PACKAGE
+
+/* Version number of package */
+#undef VERSION
+

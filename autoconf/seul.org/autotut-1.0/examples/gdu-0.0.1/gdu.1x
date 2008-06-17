@@ -1,0 +1,31 @@
+.TH GDU 1x "11 Apr 2001" "Free Software" "User Manuals"
+.SH NAME
+gdu \- GTK+ Disk Usage Browser
+.SH SYNOPSIS
+gdu
+
+.SH DESCRIPTION
+\fBgdu\fR is a GTK+ program that runs the \fBdu (1)\fR utility as
+a child process and shows the results graphically, showing
+the space occupied proportionally on the screen.
+
+The display is also a clickable map, all box big enough to
+have a label printed are clickable targets, clicking it
+will run du on the given directory.
+
+.SH BUGS 
+blocking I/O is used to talk to du, the interface becomes blocky
+sometimes.
+
+.SH CREDITS
+\fBgdu\fR was written by Felipe Bergo <bergo@seul.org> as an
+example for autotut (a tutorial on using autoconf and automake).
+
+.SH UNRESTRICTIONS
+gdu is free; anyone may redistribute copies of gdu to anyone under the
+terms stated in the GNU General Public License. A copy of the
+license accompanies each copy of gdu. You can also browse it online
+at http://www.gnu.org/copyleft/gpl.html
+
+.SH SEE ALSO
+\fBdu\fR(1)

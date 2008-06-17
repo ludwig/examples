@@ -1,0 +1,15 @@
+
+libdinner
+---------
+
+provides C functions to access a running dinnerd server.
+(the default port is 8081 for the client subprotocol)
+
+see dinner.h for the functions available from the
+library.
+
+For more information on the protocol, see the
+documentation that comes with dinnerd, the
+protocol daemon.
+
+-- Felipe Bergo <bergo@seul.org>

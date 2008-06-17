@@ -1,0 +1,44 @@
+
+dinnerd
+-------
+
+This is dinnerd, an implementation of the dining hackers
+protocol. The protocol itself is described in the
+DiningHackers.txt file.
+
+For instructions on building dinnerd see the INSTALL file.
+This file deals with the syntax for running dinnerd.
+
+Currently the only command line argument dinnerd takes is
+--nodaemon:
+
+dinnerd [--nodaemon]
+
+dinnerd will run always listening to ports 8081 and 8082
+(8081 is for the client sub-protocol, 8082 for the
+watcher sub-protocol).
+
+When run in daemon mode it will only provide output on
+errors.
+
+In nodaemon mode you'll be able to see messages for every
+connection, request and event that happens.
+
+dinnerd only provides the service. The only current
+client implementation is called hungryhacker , it is
+distributed in a separate package.
+
+There is also libdinner, a library that provides access
+to a dinnerd server without the need to deal directly with
+sockets, TCP connections and other details.
+
+And yet, there is vdinner, a Mesa-based 3D visualization
+for dinnerd.
+
+This protocol and its associated programs were developed
+as examples for a tutorial on the usage os automake,
+autoconf and other GNU tools.
+
+Don't take it too seriously.
+
+-- Felipe Bergo <bergo@seul.org>

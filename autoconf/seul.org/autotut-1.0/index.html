@@ -1,0 +1,1777 @@
+<html>
+<head>
+<title>autotut: Using GNU auto{conf,make,header}</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+
+<h1>autotut: Using GNU auto{conf,make,header}</h1>
+by <b>Felipe Bergo</b> (bergo at seul dot org)<br>
+<i>May 2001</i>
+<p>
+<h3>Contents</h3>
+<a href="#intro">1. Introduction</a><br>
+<a href="#who">2. Who's who</a><br>
+<a href="#autoconf">3. Meet autoconf</a><br>
+<a href="#autoconf2">4. Autoconf Macros</a><br>
+<a href="#autoheader">5. Autoheader</a><br>
+<a href="#automake">6. Automake</a><br>
+<a href="#automake2">7. Constructing an Automake-aware Software Package</a><br>
+<a href="#makefileam">8. Makefile.am</a><br>
+<a href="#libtool">9. Building Libraries: libtool</a><br>
+<a href="#nesting">10. Nesting</a><br>
+<a href="#breeding">11. Breeding</a><br>
+<br>
+<a href="#bibliography">Bibliography</a><br>
+<a href="#copyleft">Copyright Notice</a><br>
+<a href="#thanks">Thanks</a><br>
+<a href="#offline">Other formats</a>
+<p>
+<hr noshade size=1>
+
+<a name="intro">
+<h2>1. Introduction</h2><ul>
+</a>
+Most programmers make first contact with <b>autoconf</b> and
+friends when compiling and installing free software obtained
+from the web. These programmers are told to run a
+<b>configure</b> script, then type <b>make</b>, and usually
+<b>make install</b> as root to install the new software.
+<p>
+The widespread use of these <b>configure</b> scripts made
+building software from the sources easier. This document
+discusses the software packages used to generate the
+<b>configure</b> script and other associated files.
+<p>
+This document is aimed at developers intending
+to develop Free Software or already maintaining
+Free Software packages.
+<p>
+We assume the reader is already familiar with <i>Makefiles</i>.
+</ul>
+
+<a name="who">
+<h2>2. Who's who</h2><ul>
+</a>
+The software packages we are dealing directly with here are:
+<b>GNU autoconf</b>, <b>GNU automake</b> and
+<b>GNU autoheader</b>. Indirectly, we are dealing with
+the <b>m4</b> macro processor, <b>make</b> (either GNU or BSD) and
+<b>aclocal</b>.
+We talk about <b>GNU libtool</b> too.
+<p>
+<b>Figure 1</b> gives an overview of what the programs do. The main
+input files are <b>configure.in</b> and <b>Makefile.am</b>.
+<p>
+<center>
+<img src="figure1.png" alt="Figure 1"><br>
+<b>Figure 1 - File Input/Output Graph</b>
+</center>
+</ul>
+
+<a name="autoconf">
+<h2>3. Meet Autoconf</h2><ul>
+</a>
+In our first example we'll ignore <i>automake</i> (by writing
+our own Makefile.in) and have a simple C program configure'd
+by <b>autoconf</b>. You can download the files in a .tar.gz
+archive: <a href="examples/autotut-ex1.tar.gz">autotut-ex1.tar.gz</a>
+<p>
+
+<table border=0 cellspacing=0 cellpadding=5 width=80%>
+<tr><td bgcolor=#000000><font color=#ffffff>
+<font size=4>File 1: <b>pi.c</b></font></td></tr>
+<tr><td bgcolor=#ceffce>
+<pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int main(int argc, char **argv) {
+        double value=0.0,denom=1.0,sig=1.0;
+        unsigned long t,prec;
+
+	printf("PI Approximator version %s\n",VERSION);
+
+        prec=10;
+        if (argc&gt;1) prec=atol(argv[1]);
+        
+        for(t=prec;t;t--) {
+                value+=sig/denom;
+                sig=-sig;
+                denom+=2.0;
+        }
+        value*=4.0;
+        printf("pi ~= %.8f , with %lu iterations\n",value,prec);
+        return 0;
+}
+</pre>
+</td></tr></table>
+<p>
+This program will approximate the value of pi using a
+Taylor series.
+<p>
+<table border=0 cellspacing=0 cellpadding=5 width=80%>
+<tr><td bgcolor=#000000><font color=#ffffff>
+<font size=4>File 2: <b>configure.in</b></font>
+</td></tr><tr><td bgcolor=#ceffce>
+<pre>
+AC_INIT(pi.c)
+            
+dnl find and test the C compiler
+AC_PROG_CC
+AC_LANG_C
+        
+AC_PROG_MAKE_SET
+               
+AC_HEADER_STDC
+AC_CHECK_FUNC(atol,,AC_MSG_ERROR(oops! no atol ?!?))
+                  
+VERSION="0.0.1"
+AC_SUBST(VERSION)
+
+dnl read Makefile.in and write Makefile
+AC_OUTPUT(Makefile)
+</pre>
+</td></tr></table>
+<p>
+And finally the template for the Makefile (be careful,
+in Makefiles tabs and spaces are different. The 8-space
+indentations you see below must be tabs, not spaces):
+<p>
+<table border=0 cellspacing=0 cellpadding=5 width=80%>
+<tr><td bgcolor=#000000><font color=#ffffff>
+<font size=4>File 3: <b>Makefile.in</b></font>
+</td></tr><tr><td bgcolor=#ceffce>
+<pre>
+CC = @CC@
+VERSION = @VERSION@
+CFLAGS = @CFLAGS@
+
+all: pi-bin
+
+pi-bin: pi.c
+        $(CC) $(CFLAGS) -DVERSION=\"$(VERSION)\" pi.c -o pi
+
+clean:
+        rm -f pi
+
+distclean:
+        rm -f pi config.* Makefile
+</pre>
+</td></tr></table>
+<p>
+Having these 3 files in a directory, run <b>autoconf</b>:
+<p>
+<pre>
+autoconf
+</pre>
+<p>
+This will generate a file called <b>configure</b>, which happens
+to be a shell script. Now run
+<p>
+<pre>
+./configure
+</pre>
+<p>
+You should see an output like this
+<p>
+<table border=0 cellspacing=0 cellpadding=5 width=80%>
+<tr><td bgcolor=#000000><font color=#ffffff>
+<font size=4>Example 1: configure output</font>
+</td></tr><tr><td bgcolor=#ceffce>
+<pre>
+creating cache ./config.cache
+checking for gcc... gcc
+checking whether the C compiler (gcc  ) works... yes
+checking whether the C compiler (gcc  ) is a cross-compiler... no
+checking whether we are using GNU C... yes
+checking whether gcc accepts -g... yes
+checking whether make sets ${MAKE}... yes
+checking how to run the C preprocessor... gcc -E
+checking for ANSI C header files... yes
+checking for atol... yes
+updating cache ./config.cache
+creating ./config.status
+creating Makefile
+</pre>
+</td></tr></table>
+<p>
+As seen in the output, a file called <b>Makefile</b> was indeed created.
+It closely resembles the <b>Makefile.in</b> file. In fact, the
+only changes <tt>configure</tt> does in the translation from
+Makefile.in to Makefile is substituting variable values between
+at-signs (like @CC@, @VERSION@). And it does this kind of
+translation to every file listed in the AC_OUTPUT macro. We'll
+get to the macros soon.
+<p>
+Now you can run <tt>make</tt>. It will compile the program and
+generate a binary called <tt>pi</tt>. You might run it this
+way, for example:
+<p>
+<pre>
+galadriel:~/autotut-ex1$ ./pi 2000000
+PI Approximator version 0.0.1
+pi ~= 3.14159215 , with 2000000 iterations
+galadriel:~/autotut-ex1$
+</pre>
+<p>
+</ul>
+
+<a name="autoconf2">
+<h2>4. Autoconf Macros</h2><ul>
+</a>
+Now that the basic <b>autoconf</b> functionality has been presented,
+we discuss the format of the <b>configure.in</b> file.
+<p>
+The configure.in file is processed by the <b>m4</b> macro processor,
+but aside from the m4 macros, it is a Bourne shell script. Thus you
+can use <b>if...then...fi</b>, and  constructs from Bourne shells.
+You can have some reference on shell programming by reading the
+<b>bash</b> or <b>sh</b> man pages (depending on the
+operating system you are on).
+<p>
+<font color=#ff0000><b>IMPORTANT!</b></font> The square brackets
+have special meaning to the m4 processor, so if you want to
+use the <b>test</b> (see <b>test (1)</b>) command you must
+spell it out as <tt>test</tt> instead of using the Bourne shell
+[...] abbreviation.
+<p>
+Also, the shell variables defined and modified within 
+configure.in are NOT substituted automatically in
+the AC_OUTPUT files. You must explicitly call AC_SUBST (as done
+with the VERSION variable in the first example) to request the
+substitution. However, when an internal autoconf macro says
+"sets variable NAME", it sets and AC_SUBSTs it, thus you must
+only worry about variables set on your own.
+<p>
+m4 macros are called with the following syntax: (<b>dnl</b> is the comment
+directive, it is equivalent to C++ // comments: may start at any
+position in the line, and the rest of the line is considered a comment)
+<p>
+<ul>
+<pre>
+FOO(parameter1, parameter2, parameter3)
+
+BAR dnl a macro without parameters
+
+ZEN(parameter1,,parameter3) dnl optional parameter 2 omitted
+
+TUT(parameter1,parameter2,[
+this is parameter 3 which spans
+along several lines. Now you
+know why square brackets cannot
+be used for the 'test' command.])
+</pre>
+</ul>
+<p>
+Conventionally , all macros provided by autoconf start with
+<b>AC_</b>. As we shall see later, automake's macros
+start with <b>AM_</b>.
+<p>
+Autoconf sets some variables by itself, the most important of them is
+<b>prefix</b> (referenced as <tt>@prefix@</tt> in a Makefile.in),
+which is the installation prefix chosen with <i>configure --prefix=path</i>.
+It defaults to /usr/local. This means binaries go in /usr/local/bin,
+libraries in /usr/local/lib, man pages in /usr/local/man and so on.
+<p>
+What we are most interested in are the macros provided by <b>autoconf</b>.
+This is not at all a complete list, just the most common macros.
+<p>
+<table border=1>
+<tr>
+<td><b>Macro Prototype</b></td>
+<td><b>Comments</b></td>
+</tr>
+
+<tr valign=top>
+<td>AC_INIT(sourcefile)</td>
+<td>Initializes autoconf, should be the first
+macro called in configure.in. sourcefile is the
+name (relative to current directory) of a
+source file from your code.</td>
+</tr>
+
+<tr valign=top>
+<td>AC_PROG_CC</td>
+<td>Determines a C compiler to use, sets the CC variable. If this is
+GCC, set the GCC variable to 'yes', otherwise 'no'.
+Initializes the CFLAGS variable
+if it hasn't been set already (to override CFLAGS, do
+it in configure.in BEFORE calling this macro)</td>
+</tr>
+
+<tr valign=top>
+<td>AC_PROG_CXX</td>
+<td>Determines a C++ compiler to use, sets the CXX variable. If this is
+the GNU C++ compiler, set GXX to 'yes', otherwise 'no'.
+Initializes the CXXFLAGS variable
+if it hasn't been set already (to override CXXFLAGS, do
+it in configure.in BEFORE calling this macro)</td>
+</tr>
+
+<tr align=top>
+<td>AC_LANG_C</td>
+<td>Tests the C compiler</td>
+</tr>
+
+<tr align=top>
+<td>AC_LANG_CPLUSPLUS</td>
+<td>Tests the C++ compiler</td>
+</tr>
+
+<tr valign=top>
+<td>AC_PROG_INSTALL</td>
+<td>Set variable INSTALL to the path of a BSD-compatible
+install program (see <b>install (1)</b>). If not found,
+set it to '<i>dir</i>/install-sh -c' , looking in the
+directories specified to AC_CONFIG_AUX_DIR. Also sets
+INSTALL_SCRIPT and INSTALL_PROGRAM to $(INSTALL), and
+INSTALL_DATA to '$(INSTALL) -m 644'. <b>You must
+provide a install-sh file in the current directory</b>
+(unless you use AC_CONFIG_AUX_DIR -- the common practice
+is to provide a install-sh file)<b> else autoconf
+will refuse to run</b>.</td>
+</tr>
+
+<tr valign=top>
+<td>AC_PATH_X</td>
+<td>
+Try to locate the X window system's includes and libraries,
+and sets the variables x_includes and x_libraries to their
+locations.
+</td>
+</tr>
+
+<tr valign=top>
+<td>AC_PATH_XTRA</td>
+<td>
+Like the previous, but adds the required include flags to
+X_CFLAGS and required linking flags to X_LIBS.
+</td>
+</tr>
+
+<tr valign=top>
+<td>AC_PATH_PROG(a,b[,c[,d]])<br>
+a=variable-name<br>
+b=prog-to-check<br>
+c=value-if-not-found<br>
+d=path
+</td>
+<td>Looks for prog-to-check in PATH, and sets variable-name to the
+full path if found, or to value-if-not-found if not.</td>
+</tr>
+
+<tr valign=top>
+<td>AC_PROG_MAKE_SET</td>
+<td>
+If make predefines the variable MAKE, define output variable
+SET_MAKE to be empty. Otherwise, define SET_MAKE to
+contain `MAKE=make'.
+</td>
+
+<tr valign=top>
+<td>AC_OUTPUT(files [,a[,b]])</td>
+<td>Create output files. Perform substitutions on
+<i>files</i>, which contains a list of files
+separated by spaces. (is writes, say, Makefile, from
+a Makefile.in file, spec from spec.in, and so on. The name
+given here is <i>without</i> the .in suffix.
+The other 2 parameters are seldom used, consult the
+autoconf docs if needed. If AC_CONFIG_HEADER,
+AC_LINK_FILES or AC_CONFIG_SUBDIRS were called,
+the files named as their arguments are created too.
+</td>
+
+<tr valign=top>
+<td>AC_CONFIG_HEADER(files)</td>
+<td>
+Make AC_OUTPUT create the headers listed in the files list
+(space-separated). Replaces @DEFS@ in generated files
+with -DHAVE_CONFIG_H. The usual name for the header
+is config.h (created from config.h.in. The <b>autoheader</b>
+generates config.h.in files automatically for
+you (it is documented in the next sections).
+</td>
+</tr>
+
+<tr valign=top>
+<td>AC_CONFIG_SUBDIRS(dirs)</td>
+<td>
+run <b>configure</b> scripts in the subdirectories listed
+in <i>dirs</i> (space-separated). This is meant for when
+you nest child packages to your program (like including
+libraries as subdirs).
+</td>
+</tr>
+
+<tr valign=top>
+<td>AC_CHECK_FUNC(a[,b[,c]])<br>
+a=function<br>
+b=action if found<br>
+c=action if not found
+</td>
+<td>
+checks if the given C function is available in the
+standard library (i.e., the libraries that are linked
+by default to any C program).
+</td>
+</tr>
+
+<tr valign=top>
+<td>AC_CHECK_FUNCS(a[,b[,c]])<br>
+a=list of functions (space-separated)<br>
+b=action if found<br>
+c=action if not found
+</td>
+<td>similar to AC_CHECK_FUNC, but looks for
+many functions at once, setting HAVE_function
+for each function found (in the given set).
+</td>
+</tr>
+
+<tr valign=top>
+<td>AC_CHECK_LIB(a,b[,c[,d[,e]]])<br>
+a=library name<br>
+b=function name<br>
+c=action if found<br>
+d=action if not found<br>
+e=see autoconf docs
+</td>
+<td>Checks whether a function exists in
+the given library (library names without
+the leading lib, e.g., for libxml, use
+just xml here)
+</td>
+</tr>
+
+<tr valign=top>
+<td>AC_HEADER_STDC</td>
+<td>Checks for stdlib.h, stdarg.h , string.h and
+float.h, defines STDC_HEADERS on success.</td>
+</tr>
+
+<tr valign=top>
+<td>AC_CHECK_HEADER(header[,a[,b]])<br>
+a=action if found<br>
+b=action if not found<br></td>
+<td>Checks whether a given header file
+exists.</td>
+</tr>
+
+<tr valign=top>
+<td>AC_MSG_ERROR(message)</td>
+<td>Notifies the user an error has occurred and
+exits configure with a non-zero status. This is
+what you should do when a required library or header
+is missing.</td>
+</tr>
+
+<tr valign=top>
+<td>AC_MSG_WARNING(message)</td>
+<td>Notifies the user with the given message. This is
+what you should do when an optional library is missing
+(thus the final result will be not as good as it could)
+</td>
+</tr>
+
+<tr valign=top>
+<td>AC_ARG_ENABLE(feature,help[,a[,b]])<br>
+a=action if given<br>
+b=action if not given</td>
+<td>Checks whether the user gave --enable-<i>feature</i> in
+the configure command-line. The help string is shown
+in <b>configure --help</b></td>
+</tr>
+
+</table>
+
+<p>
+
+The full documentation for these is found in the
+<a href="http://www.gnu.org/manual/autoconf/index.html">GNU autoconf documentation</a>.
+<p>
+There are many more autoconf macros. If these weren't already enough, you
+can supply a macro library with your own software distribution.
+To do this, place the macro definitions in a file called <b>aclocal.m4</b>
+in the same directory as configure.in, all macros defined in aclocal
+can now be used in configure.in. The common use for this is to
+have specific-library checking macros, e.g. AC_REQUIRE_GTK(1,2,8) to
+require the GTK library version 1.2.8 or later. You may also
+place your macros in a file called <b>acinclude.m4</b> if you are using
+the <b>aclocal</b> program. <b>aclocal</b> will be presented later.
+<p>
+And don't be tempted to have configure.in for each directory in
+your source tree. Multiple configure.in's are only desirable when
+you integrate different software packages in a common source
+tree (such as <i>my program and the 3000 libraries it requires</i>).
+<p>
+If you really need nested configure.in's you should read autoconf's 
+documentation.
+</ul>
+
+<a name="autoheader">
+<h2>5. Autoheader</h2><ul>
+</a>
+Often you will want to make your code portable and want to use
+values gathered in the <i>configure</i> step to select
+which code to compile (with #ifdefs in C code). However the
+autoconf macros that generate definitions can pile up quite quickly,
+and you may end up with gcc lines like:
+<p>
+<pre>
+gcc -g -O2 -Wall -fexpensive-optimizations -DSTDC_HEADERS=1
+-DHAVE___clone=0 -DHAVE_localtime=1 -DVERSION=\"0.0.1beta-fb-rc4\"
+-DSYSTEM_STRING=\"FreeBSD-5.0-CURRENT-i386\" -DSYSTEM=\"FreeBSD\"
+-DPERL_VERSION_MAJOR=5 -DPERL_VERSION_MINOR=6 -DPERL_VERSION_MICRO=0
+-I. -I.. -I/usr/X11R6/include -I/opt/include -c gibberish.c
+-o gibberish.o
+</pre>
+<p>
+While it is no harm to your system, seeing these mutant odd-balls
+scroll as your program is compiled can be quite unpleasant.
+(as a side note, FreeBSD was chosen as an example in this document
+about GNU tools as the system name/version strings it provides are
+usually much longer and more polluted than those in
+GNU/Linux systems).
+<p>
+The solution is to put all the definitions in a header file. You can
+do that in autoconf with the AC_CONFIG_HEADER macro. The conventional
+name for this header is config.h. However, you must supply a .in
+header (config.h.in) with all the possible definitions spelled out,
+so that autoconf will just change #define to #undef or add a value
+to the #define. Here comes <b>autoheader</b>. Just run <b>autoheader</b>
+on a directory with a configure.in that contains a AC_CONFIG_HEADER
+macro call, and it will write the .in file.
+<p>
+Let's use the same pi.c program we did before to show the work of
+autoheader. You can get the files in a tarball too:
+<a href="examples/autotut-ex2.tar.gz">autotut-ex2.tar.gz</a>. I won't
+list all files again, just configure.in.
+<p>
+<table border=0 cellspacing=0 cellpadding=5 width=80%>
+<tr><td bgcolor=#000000><font color=#ffffff>
+<font size=4>Example 2: configure.in</font>
+</td></tr><tr><td bgcolor=#ceffce>
+<pre>
+AC_INIT(pi.c)
+AC_CONFIG_HEADER(config.h)
+
+dnl find and test the C compiler
+AC_PROG_CC
+AC_LANG_C
+
+AC_PROG_MAKE_SET
+
+AC_HEADER_STDC
+AC_CHECK_FUNCS(atol atoi strtod)
+
+VERSION="0.0.1-rc2"
+AC_SUBST(VERSION)
+
+dnl read Makefile.in and config.h.in, write Makefile and config.h
+AC_OUTPUT(Makefile)
+</pre>
+</td></tr></table>
+<p>
+We're not really using atoi() and strtod(), they're there just to
+make some volume.
+<p>
+After running <b>autoheader</b> we get this <b>config.h.in</b>:
+<p>
+<table border=0 cellspacing=0 cellpadding=5 width=80%>
+<tr><td bgcolor=#000000><font color=#ffffff>
+<font size=4>Example 2: config.h.in</font>
+</td></tr><tr><td bgcolor=#ceffce>
+<pre>
+/* config.h.in.  Generated automatically from configure.in by autoheader.  */
+
+/* Define if you have the ANSI C header files.  */
+#undef STDC_HEADERS
+
+/* Define if you have the atoi function.  */
+#undef HAVE_ATOI
+
+/* Define if you have the atol function.  */
+#undef HAVE_ATOL
+
+/* Define if you have the strtod function.  */
+#undef HAVE_STRTOD
+</pre>
+</td></tr></table>
+<p>
+And now you run configure as usual. It will write a config.h
+based on this template. Let's see what it generates:
+<p>
+<table border=0 cellspacing=0 cellpadding=5 width=80%>
+<tr><td bgcolor=#000000><font color=#ffffff>
+<font size=4>Example 2: config.h</font>
+</td></tr><tr><td bgcolor=#ceffce>
+<pre>
+/* config.h.  Generated automatically by configure.  */
+/* config.h.in.  Generated automatically from configure.in by autoheader.  */
+
+/* Define if you have the ANSI C header files.  */
+#define STDC_HEADERS 1
+
+/* Define if you have the atoi function.  */
+#define HAVE_ATOI 1
+
+/* Define if you have the atol function.  */
+#define HAVE_ATOL 1
+
+/* Define if you have the strtod function.  */
+#define HAVE_STRTOD 1
+</pre>
+</td></tr></table>
+<p>
+Of course you must #include "config.h" in your source files to
+use the definitions.
+<p>
+Also, autoheader only copies definitions from the
+/usr/share/autoconf/acconfig.h file. If some macro you
+used needs a different entry in config.h.in, write it in
+a file called <b>acconfig.h</b> in the same
+directory as configure.in, and it will be included
+in config.h.in by autoheader.
+</ul>
+
+<a name="automake">
+<h2>6. Automake</h2><ul>
+</a>
+You may have noticed that our example Makefile.in does not have
+a "install" target that installs the program to its permanent
+location on the system. Neither does it have a "uninstall" target.
+It also lacks other lesser-known, standard targets, such as
+"dist". The tarball doesn't have a README file, nor an INSTALL
+file. Where's the license ? 
+<p>
+Dozens of new versions of Free Software packages are released every day.
+The average user expects the task of getting a new software package
+(or a new release of a software package he already uses) to be:
+fast, easy, simple and uneventful.
+<p>
+The software archive should be standard, the user should
+already know how to unpack it; The building process
+should not require any programming skills from the user -- did you
+know there are people out there who can't understand Perl ? --
+requiring the user to edit an include file that'll be parsed by
+a strict-syntax interpreter/compiler should be avoided at all
+costs; The building process should not take long. If it
+really must take long, all user-interaction should be concentrated in
+one single, as fast as possible, step. The simple user --
+not concerned with programming languages, compilers, etc. -- should
+receive error messages in a user-friendly manner, and as soon as
+possible. This means
+<p>
+<pre>
+checking for main in -lstdc++... no
+configure: error: libstdc++ missing. This software
+requires libstdc++, please come back after installing it.
+</pre>
+<p>
+is much better than, after compiling 10 files, the user be brought to:
+<p>
+<pre>
+oops.cc: In function `int main(int, char **)':
+oops.cc:7: `list' undeclared (first use this function)
+oops.cc:7: (Each undeclared identifier is reported only once
+oops.cc:7: for each function it appears in.)
+oops.cc:7: parse error before `>'
+oops.cc:10: `c' undeclared (first use this function)
+oops.cc:11: confused by earlier errors, bailing out
+</pre>
+<p>
+The former solution at least gave the user something to
+write in the Google or Freshmeat search boxes.
+<p>
+The build process should be consistent for many reasons. One
+is philosophical: when you make an end-user feel skilled, by teaching
+him how to build software from source, he may try other softwares
+distributed the same way (probably he will).
+He comes closer to the Free Software
+community. He notices he accomplished very much with little
+effort -- he just had to type 3 commands the INSTALL file told
+him to type -- and is looking forward to learn more.
+Another reason is practical: you want your users to use your software,
+you may want that other programmers check your
+software for bugs (it will happen, whether you want it or not ;-),
+but you don't want to have your mailbox
+filled with requests like 'Cannot compile foobar, please help me'.
+Worse, many people will just turn their back on your software if
+they fail to build it.
+<p>
+Some software packages, like the Linux kernel, for instance, require
+such a burden of options (which driver comes in, which comes not, what CPU
+you have, whether your network addresses are 4- or 16-byte long,
+or both, or neither, and the list goes on), that
+using autoconf to configure it would be a pain. But this is a quite special
+piece of software, it should be configured in its own way.
+<p>
+Most Free Software packages available have very few, if any,
+fancy requirements, and it is an annoyance for the user if s/he has
+to read a long document to discover how to compile and install (sometimes
+even finding the document is a challenge). This
+even leads to users preferring binary packages that come without
+source code (heresy!). It is a service to all Free Software users
+to ensure that your software configures/compiles/installs in a
+consistent way. The de facto standard is to use automake+autoconf.
+You may try to emulate the behavior of an automake-generated
+Makefile by hand, but there are many pitfalls you can be trapped in.
+<p>
+In the next sections we present <b>GNU automake</b>, which generates a
+<b>Makefile.in</b> file based on a <b>Makefile.am</b> file.
+Automake will also look for missing files that may
+cause your users to be confused if they are not present.
+Automake will either place a standard one in the package directory or
+complain about the missing file. (The rule is that universal files
+are copied from automake's distribution, and package-dependent files
+like AUTHORS, ChangeLog, etc. aren't).
+<p>
+Note: automake is not the only tool to help your users.
+See the bibliography for other documents discussing
+software packaging and distribution.
+</ul>
+
+<a name="automake2">
+<h2>7. Constructing an Automake-aware Software Package</h2><ul>
+</a>
+The Makefile.am file basically contains Makefile variable
+definitions, included in a templated Makefile
+built by automake. So the syntax in this file is the
+syntax of a Makefile: comments are placed in lines starting
+with '#', multi-line lists are made with backslashes.
+<p>
+In this section we present an example, in the next we explain the
+format of the Makefile.am file in detail.
+<p>
+The example for this section is a GTK+ front-end for the
+<b>du</b> utility, called <b>gdu</b>. First we show,
+step by step, what the source files are and what files
+must be created (as input for automake and autoconf),
+and how automake, autoconf and other utilities are run
+to generate a working package. The resulting package for
+this section can be downloaded:
+<a href="examples/gdu-0.0.1.tar.gz">gdu-0.0.1.tar.gz</a>.
+<p>
+
+<h4>1. Create an empty directory for the project</h4>
+<pre>
+mkdir gdu
+</pre>
+
+<h4>2. Place source files</h4>
+For gdu, the source is consists of 2 C++ source files (.cc), 1
+C++ header (.h), 6 pixmap pictures for the toolbar (.xpm)
+and a man page for the program (gdu.1x).
+<p>
+<pre>
+gdu.cc         gdu.h        tree.cc
+about.xpm      back.xpm     home.xpm
+reload.xpm     root.xpm     stop.xpm
+gdu.1x
+</pre>
+<p>
+Of course, in a real-world situation, you won't copy these files,
+you'll write them :-).
+
+<h4>3. Write configure.in</h4>
+Write a <b>configure.in</b> file for autoconf. Notice that
+some automake macros (AM_) come in, and some autoconf
+macros are replaced by automake macros.
+<p>
+You must call <tt>AM_INIT_AUTOMAKE(package,version)</tt>
+right after <tt>AC_INIT</tt>, use <tt>AM_CONFIG_HEADER</tt> instead
+of <tt>AC_CONFIG_HEADER</tt>.
+<p>
+This is our configure.in:
+<p>
+<table border=0 cellspacing=0 cellpadding=5 width=80%>
+<tr><td bgcolor=#000000><font color=#ffffff>
+<font size=4>GDU (Example 3): configure.in</font>
+</td></tr><tr><td bgcolor=#ceffce>
+<pre>
+AC_INIT(gdu.cc)
+AM_INIT_AUTOMAKE(gdu,0.0.1)
+AM_CONFIG_HEADER(config.h)
+
+CXXFLAGS=
+
+AC_PROG_CC dnl for AM_PROG_GTK only
+AC_PROG_CXX
+AC_PROG_INSTALL
+AC_PROG_MAKE_SET
+
+AC_HEADER_STDC
+
+dnl it will define GTK_CFLAGS and GTK_LIBS for us,
+dnl comes from gtk.m4 (aclocal will find it for us)
+AM_PATH_GTK(1.2.6)
+
+AC_LANG_CPLUSPLUS dnl else AM_PATH_GTK blows up
+
+AC_CHECK_LIB(stdc++, main,,AC_MSG_ERROR(gdu requires libstdc++))
+AC_CHECK_HEADERS(stack,,AC_MSG_WARN(STL classes missing ?))
+AC_CHECK_HEADERS(string,,AC_MSG_WARN(STL classes missing ?))
+AC_CHECK_HEADERS(list,,AC_MSG_WARN(STL classes missing ?))
+AC_CHECK_HEADERS(vector,,AC_MSG_WARN(STL classes missing ?))
+
+AC_OUTPUT(Makefile)
+</pre>
+</td></tr></table>
+<p>
+If you use macros from aclocal files (usually in /usr/share/aclocal),
+as we did here (the AM_PROG_GTK macro is in /usr/share/aclocal/gtk.m4,
+and some automake macros must be imported too), you must run the
+<b>aclocal</b> program to create an <b>aclocal.m4</b> file with
+all needed macros. This file is overwritten every time aclocal is run,
+so if you want to have your own macros written locally, place them in
+<b>acinclude.m4</b>, aclocal will include these in the generated
+<b>aclocal.m4</b>.
+
+<h4>4. Run aclocal, autoconf, autoheader</h4>
+Now you can already generate some of the files. You must
+run aclocal, autoheader and autoconf; aclocal must run first.
+In a Bourne shell you can run all three in a row with
+<p>
+<pre>
+aclocal && autoheader && autoconf
+</pre>
+<p>
+<b>aclocal</b> will generate an <b>aclocal.m4</b> file (getting
+information from configure.in [needed] and acinclude.m4 [optional]).
+<p>
+<b>autoheader</b> will read configure.in and produce a
+<b>config.h.in</b> file (or whatever you named it in the AM_CONFIG_HEADER
+macro).
+<p>
+<b>autoconf</b> will read configure.in and aclocal.m4 and produce
+a <b>configure</b> script.
+
+<h4>5. Write a Makefile.am</h4>
+This is our Makefile.am:
+<p>
+<table border=0 cellspacing=0 cellpadding=5 width=80%>
+<tr><td bgcolor=#000000><font color=#ffffff>
+<font size=4>GDU (Example 3): Makefile.am</font>
+</td></tr><tr><td bgcolor=#ceffce>
+<pre>
+AUTOMAKE_OPTIONS = gnu
+LDADD =    @GTK_LIBS@
+CPPFLAGS = @GTK_CFLAGS@
+bin_PROGRAMS = gdu
+gdu_SOURCES = gdu.cc tree.cc
+
+noinst_HEADERS = gdu.h
+
+# man page
+man_MANS = gdu.1x
+
+# we want these in the dist tarball
+EXTRA_DIST = back.xpm reload.xpm root.xpm \
+             home.xpm stop.xpm about.xpm gdu.1x
+</pre>
+</td></tr></table>
+<p>
+We'll dissect nomenclature later, but:
+<p>
+AUTOMAKE_OPTIONS = gnu could be achieved
+by running automake with the --gnu command-line
+option. See 'automake --help' for all command-line
+options.
+<p>
+LDADD and CPPFLAGS (CFLAGS for C programs)
+specify flags used for linking and compiling);
+<p>
+bin_PROGRAMS is a (space-separated) list of all binaries
+that will be built and installed by your package. We'll
+build just <b>gdu</b> here.
+<p>
+gdu_SOURCES is the list of source files that are compiled and linked
+to generate <b>gdu</b>. For each item in the bin_PROGRAMS list you
+need a name_SOURCES list of sources.
+<p>
+man_MANS lists the man pages installed.
+<p>
+noinst_HEADERS is the list of headers that must go into a
+distribution (a distribution is the .tar.gz file you
+distribute you program) but are NOT installed to
+<tt>@prefix@/include</tt> in the <b>install</b> step.
+<p>
+EXTRA_DIST lists additional files that must be included in the
+distribution. The xpm files could be listed under noinst_HEADERS,
+it really makes no difference here.
+<p>
+
+<h4>6. Running automake</h4>
+Now we are ready to run automake (maybe). There some files
+missing, but automake will tell us about them, so relax.
+Run this (the --add-missing will add default files from the
+automake distribution when possible, complain about missing
+files when not)
+<p>
+<pre>
+automake --add-missing
+</pre>
+<p>
+we obtain
+<p>
+<table border=0 cellspacing=0 cellpadding=5 width=80%>
+<tr><td bgcolor=#000000><font color=#ffffff>
+<font size=4>GDU (Example 3): automake output</font>
+</td></tr><tr><td bgcolor=#ceffce>
+<pre>
+automake: configure.in: installing `./install-sh'
+automake: configure.in: installing `./mkinstalldirs'
+automake: configure.in: installing `./missing'
+automake: Makefile.am: installing `./INSTALL'
+automake: Makefile.am: required file `./NEWS' not found
+automake: Makefile.am: required file `./README' not found
+automake: Makefile.am: installing `./COPYING'
+automake: Makefile.am: required file `./AUTHORS' not found
+automake: Makefile.am: required file `./ChangeLog' not found
+</pre>
+</td></tr></table>
+<p>
+install-sh is the shell replacement for the BSD install program,
+triggered by AC_PROG_INSTALL. mkinstalldirs and missing are
+similar shell scripts triggered by the AM_ macros in
+configure.in.
+<p>
+INSTALL is the automake standard installation instructions
+text. COPYING is the GNU General Public License. COPYING
+was "needed" because we specified AUTOMAKE_OPTIONS = gnu.
+To work with bare requirements use AUTOMAKE_OPTIONS = foreign.
+In our example we stick with <b>gnu</b>, this is GPL'd
+program anyway.
+<p>
+However, the other required files couldn't be resolved. Because
+they are package-specific. To keep the <b>gnu</b> option, we
+have to write each of those files.
+<p>
+<i>5 minutes later...</i>
+<p>
+Having written the missing files, we run <b>automake</b> again
+(no --add-missing required, all it could add has already been
+added), and it runs swiftly without errors.
+<p>
+You'll notice that the added files are symlinks to files in
+/usr/share/automake. This is fine for some people, since the
+<b>make dist</b> step that creates the distribution tarball
+packs as files, but if you will import you source tree into
+CVS (Concurrent Versioning System -- not needed but widely used,
+don't worry if you don't use it) you probably want to run
+automake with <b>automake --add-missing --copy</b> to force
+file copying (if you want to do it now, you'll have to remove the
+symlinks first).
+
+<h4>7. Phew! Test it.</h4>
+You can now test your package with:
+<p>
+<pre>
+./configure
+make
+make dist
+make clean
+make distclean
+</pre>
+The first one will compile the package. The <b>dist</b>
+target will create a distribution tarball -- the one you'll
+distribute to your users -- in our case it will create
+a tarball named <b>gdu-0.0.1.tar.gz</b>, name and version are
+taken from the AM_INIT_AUTOMAKE macro in configure.in. This
+tarball complies with what users expect: it unpacks into a
+fresh directory of the same name (without the .tar.gz suffix).
+<p>
+<font color=#ff0000><b>IMPORTANT!</b></font> You should always
+test the distribution tarball (by unpacking, compiling and
+installing), for it is usual to have files left out
+because you forgot to add graphic files, program headers or
+other needed files in the EXTRA_DIST or noinst_HEADERS
+variables in Makefile.am. Some files (README, INSTALL, etc.)
+are automatically included in the distribution if found, and
+running automake with 'automake --help' will show a list of all
+included-if-found filenames.
+<p>
+The <b>clean</b> target removes binaries and object files (.o).
+<p>
+The <b>distclean</b> target removes not only the binaries, but
+all the configuration results created by the configure script.
+If you think your changes to configure.in or Makefile.am are
+not taking effect after running autoconf and automake, do
+a <b>make distclean</b> to clean any cached results. Also, you
+should do <b>make distclean</b> before importing your source tree
+into a CVS repository.
+<p>
+Other targets are install, uninstall and test.
+</ul>
+
+<a name="makefileam">
+<h2>8. Makefile.am</h2><ul>
+</a>
+<h4>SUBDIRS</h4>
+Automake'd projects can vary in directory
+topology. <b>Flat</b> topologies include all source files in
+the project's top directory, like <b>gdu</b>. <b>Shallow</b>
+topologies includes the sources in some subdirectories. The
+most common situation is having the source go inside a <b>src</b>
+directory instead of the top directory. <b>Deep</b>
+topologies is what happens when you include your source in the
+top directory and libraries in subdirectories.
+<p>
+To have a multi-directory source tree, specify all child
+directories in the SUBDIRS variable. Example:
+<p>
+<pre>
+SUBDIRS = src library1 library2
+</pre>
+<p>
+Each subdirectory must have its own Makefile.am.
+
+<h4>PROGRAMS</h4>
+the <tt>*_PROGRAMS</tt> variables specify programs to be built.
+bin_PROGRAMS list programs to be built and installed to
+<tt>@prefix@/bin</tt>, sbin_PROGRAMS are built and
+installed to <tt>@prefix@/sbin</tt>; EXTRA_PROGRAMS are
+built but not installed.
+
+<h4>Where Files Go ?</h4>
+For each <i>program</i> listed, program_SOURCES lists
+the source files. include_HEADERS lists headers
+that are installed to <tt>@prefix@/include</tt>.
+EXTRA_DIST and noinst_HEADERS files are included in the 
+distribution but not installed.
+<p>
+To install files to <tt>@prefix@/share/program</tt>, list
+the files in pkgdata_DATA.
+<p>
+Man pages can be listed in man_MANS. Texinfo documentation
+can be listed in info_TEXINFOS, e.g.: info_TEXINFOS = hello.texi.
+See the automake documentation if your texinfo documentation
+has dependencies.
+<p>
+Scripts that must not be compiled can be listed in
+bin_SCRIPTS (to install somewhere else, change bin to
+whatever you want appended to @prefix@ -- e.g.: sbin_SCRIPTS).
+<p>
+This is what most programs will need from automake. The
+automake documentation (see Bibliography) describes
+more formally what is installed, what goes in a distribution,
+more variable names, etc.
+</ul>
+
+<a name="libtool">
+<h2>9. Building Libraries: libtool</h2><ul>
+</a>
+In this section we show a very short example of a shared
+library package. Automake will write a Makefile.in file
+that uses libtool to build it in a portable way. Libtool is
+<b>the</b> way to build libraries. It will prevent you from
+dealing with arcane system idiosyncrasies by selecting
+compiler and linker flags and running system utilities
+as needed to integrate libraries seamlessly into the
+system.
+<p>
+The example for this section is a set of 4 programs, one
+of which is a shared library. We'll use this same set
+of programs as an example for the next section.
+<p>
+The four programs are: <b>dinnerd</b>, <b>libdinner</b>,
+<b>hungryhacker</b> and <b>vdinner</b>.
+<p>
+<b>dinnerd</b> is a daemon that acts as a server for
+the Dining Hackers protocol (this is an unofficial
+protocol, mostly useless, that I created for this
+example -- for a deeper explanation of protocol check
+the documentation in the dinnerd package). It manages a
+round table with at most 256 places, and waits for hackers
+(clients) to sit around. There are always N Chinese food
+boxes and N chop-sticks on the table, where N is the current
+number of hackers. Hackers need 2 chop-sticks to eat, so they
+all cannot eat at the same time. Competition for
+chop-sticks occurs, and hackers get angry and may beat each other
+if they can't get a chop-stick, and even die of starvation if
+they can't eat for too long. dinnerd provides two sub-protocols:
+one for hackers to connect and interact (request chop-sticks,
+etc.) and another for observers to watch the whole scene.
+Download source: <a href="examples/dinnerd-1.0.0.tar.gz">dinnerd-1.0.0.tar.gz</a>
+<p>
+<img align=right src="figure2.png" alt="vdinner screen-shot">
+<b>libdinner</b> is a library that provides a set of functions
+to access a <i>dinnerd</i> server without the need to code
+directly with the Unix network API -- you don't need to know what bytes
+come and go in the connection, the library wraps the ugly things
+for you.
+Download source: <a href="examples/libdinner-0.0.1.tar.gz">libdinner-0.0.1.tar.gz</a>
+<p>
+<b>hungryhacker</b> implements a client for the first sub-protocol.
+It implements a hacker that sleeps (in the sense of the Unix sleep()
+call, not human sleep) for a random amount of time, try to acquire
+chop-sticks, eat for a random amount of time, repeat.
+Download source: <a href="examples/hungryhacker-0.0.1.tar.gz">hungryhacker-0.0.1.tar.gz</a>
+<p>
+<b>vdinner</b> implements a client for the second sub-protocol, it
+grabbing information about the status of the table from
+<i>dinnerd</i> using the library functions of <i>libdinner</i> and
+renders everything animated in 3D with the aid of the Mesa
+graphics library, as the screen-shot at the right shows.
+Download source: <a href="examples/vdinner-0.0.1.tar.gz">vdinner-0.0.1.tar.gz</a>
+<p>
+In this section we'll focus on <i>libdinner</i>, which uses
+<b>libtool</b> to build portably across operating systems.
+<p>
+The library source code is contained on two files: libdinner.c and
+dinner.h. The later will be installed under @prefix@/include and
+applications that link with the library will need to include it.
+<p>
+The first step to build a library is including the <b>AM_PROG_LIBTOOL</b>
+macro in <tt>configure.in</tt>. This is <i>libdinner</i>'s
+<tt>configure.in</tt> file:
+<p>
+<table border=0 cellspacing=0 cellpadding=5 width=80%>
+<tr><td bgcolor=#000000><font color=#ffffff>
+<font size=4>libdinner (Example 4): configure.in</font>
+</td></tr><tr><td bgcolor=#ceffce>
+<pre>
+AC_INIT(libdinner.c)
+AM_INIT_AUTOMAKE(libdinner,0.0.1)
+AM_PROG_LIBTOOL
+
+AC_PROG_INSTALL
+
+AC_LANG_C
+AC_PROG_CC
+AC_PROG_MAKE_SET
+
+AC_HEADER_STDC
+
+AC_CHECK_HEADERS(unistd.h netdb.h netinet/in.h sys/types.h sys/socket.h,,AC_MSG_ERROR[
+required header file missing])
+
+AC_CHECK_FUNCS(gethostbyname socket htons connect shutdown,,AC_MSG_ERROR([
+required standard library function missing]))
+
+AC_OUTPUT(Makefile)
+</pre>
+</td></tr></table>
+<p>
+And this is <i>libdinner</i>'s <tt>Makefile.am</tt> file:
+<p>
+<table border=0 cellspacing=0 cellpadding=5 width=80%>
+<tr><td bgcolor=#000000><font color=#ffffff>
+<font size=4>libdinner (Example 4): Makefile.am</font>
+</td></tr><tr><td bgcolor=#ceffce>
+<pre>
+AUTOMAKE_OPTIONS = gnu
+lib_LTLIBRARIES = libdinner.la
+
+libdinner_la_SOURCES = libdinner.c
+
+include_HEADERS = dinner.h
+
+libdinner_la_LDFLAGS = -version-info 0:0:0
+</pre>
+</td></tr></table>
+<p>
+As usual, automake variable names have two parts. The <i>lib</i>
+in lib_LTLIBRARIES means the target will be installed to
+@prefix@/lib. And the LT in LTLIBRARIES is from <b>L</b>ib<b>T</b>ool.
+When target names have dashes (-) or dots (.), they're
+substituted for underscores, so we have <tt>libdinner_la_SOURCES</tt>
+instead of <tt>libdinner.la_SOURCES</tt>.
+<p>
+We're using for the first time the include_HEADERS variable. It will
+place <tt>dinner.h</tt> in @prefix@/include.
+<p>
+The last line deals with shared library versioning, which is NOT what
+you usually call a version number. Most software, both free and
+non-free, have a versioning of their own. Developers choose almost
+randomly when to increase major, minor and micro version numbers.
+With shared libraries it can't be done by guessing, since the changes
+in a library may break current binary code that was linked against
+an older version. So when you see a package called libdinner-0.0.1.tar.gz,
+0.0.1 is the author designated version number. I could have called it
+<tt>libdinner-2.A.Omega-Roglaur</tt>. But the libtool
+version number for this package is 0:0:0.
+<p>
+Libtool calls each of those 3 numbers: CURRENT, REVISION, AGE.
+<p>
+<b>Current</b> is the version of the interface the library implements.
+Whenever a new function is added, or its name changed, or the
+number or type of its parameters (the prototype -- in libraries we
+call this the <b>function signature</b>), this number
+goes up. And it goes up exactly by one.
+<p>
+<b>Revision</b> is the revision of the implementation
+of this interface, i.e., when you change the library by only
+modifying code inside the functions (fixing bugs, optimizing
+internal behavior, or adding/removing/changing signatures of
+functions that are private to the library -- used only internally) you
+raise the revision number only.
+<p>
+<b>Age</b> is the difference between the newest and oldest interface
+the library currently implements. Let's say you had 8 versions
+of your library's interface, 0 through 7. You are now on
+the 4th revision of the 8th interface, that is, 7:3:X (remember
+we start counting on zero). And when you had to make choices
+for what old interfaces you would keep support -- for backward
+compatibility purposes, you chose to keep support for interfaces
+5, 6 and (obviously) the current, 7. The libtool version of
+your library would be 7:3:2 , because the Age is 7-5 = 2.
+<p>
+From the libtool documentation, verbatim:
+<p>
+<pre>
+   **Never** try to set the interface numbers so that they correspond
+to the release number of your package.  This is an abuse that only
+fosters misunderstanding of the purpose of library versions.  Instead,
+use the `-release' flag (*note Release numbers::.), but be warned that
+every release of your package will not be binary compatible with any
+other release.
+</pre>
+<p>
+You have been warned. If you are planning to write a library
+that many people may want to use, you should read libtool's
+documentation, it'll give you good advice. You probably
+already are able to read it in your system with the
+command <tt>info libtool</tt>. How to navigate in the
+GNU info system is left as an exercise to the reader [25].
+<i>(For explanation on the meaning of numbers in square
+brackets near an exercise, grab a copy of Donald E. Knuth,
+The Art of Computer Programming, Volume 1)</i>
+<p>
+The last advice about libtool is about the need to run the
+<tt>ldconfig</tt> command on some systems after installing a
+library: even though the linker (ld) is able to find the
+new library, the dynamic linker -- the one responsible
+for loading the library when a program that uses it comes up --
+may not have updated its cache yet. Again, the command to do it <tt>ldconfig</tt>.
+</ul>
+
+
+<a name="nesting">
+<h2>10. Nesting</h2><ul>
+</a>
+Until now all our packages were <b>flat</b>, with all source
+contained in a single directory. Now we examine the other two
+kinds of packages: <b>Shallow</b> and <b>Deep</b>.
+<p>
+The major difference between shallow and deep is that in
+<i>shallow</i> packages you have only one <i>configure.in</i>,
+located in the top directory, and it will check everything that
+everything in the subdirectories need.
+<p>
+Deep packages have a configure.in in each subdirectory, and it
+looks very much like an aggregate of programs which just happen to
+be distributed together.
+<p>
+<h3>Shallow Example</h3>
+Our shallow example is <b>vdinner</b>
+(Source code: <a href="examples/vdinner-0.0.1.tar.gz">vdinner-0.0.1.tar.gz</a>).
+It has three important requirements: X, Mesa and libdinner. All the code
+is contained in the <tt>src</tt> subdirectory. For shallow
+topologies, we write a top-level <i>configure.in</i> just like
+in a <i>flat</i> topology, except that we must remember to AC_OUTPUT
+Makefiles for all subdirectories and references to files may need
+directory prefixes, such as <tt>src/vdinner.c</tt>. This is
+vdinner's <i>configure.in</i>:
+<p>
+<table border=0 cellspacing=0 cellpadding=5 width=80%>
+<tr><td bgcolor=#000000><font color=#ffffff>
+<font size=4>vdinner (Example 5): configure.in</font>
+</td></tr><tr><td bgcolor=#ceffce>
+<pre>
+AC_INIT(src/vdinner.c)
+AM_INIT_AUTOMAKE(vdinner,0.0.1)
+AM_CONFIG_HEADER(config.h)
+
+AC_PROG_INSTALL
+
+CFLAGS=
+
+AC_PROG_CC
+AC_LANG_C
+AC_PROG_MAKE_SET
+
+AC_HEADER_STDC
+
+AC_CHECK_HEADERS(ctype.h sys/time.h unistd.h math.h,,AC_MSG_ERROR([
+required header files missing]))
+
+AC_PATH_XTRA
+
+dnl check for Mesa
+
+AC_CHECK_HEADERS(GL/glut.h,,AC_MSG_ERROR([
+Mesa header not found. The Mesa graphics
+library is required to compile and run
+vdinner.
+Check http://mesa3d.sourceforge.net]))
+
+CFLAGS="$CFLAGS $X_CFLAGS"
+LIBS="$X_PRE_LIBS $X_LIBS -lX11 -lXext -lXmu -lXt $X_EXTRA_LIBS -lGL -lGLU -lglut -lm"
+
+AC_MSG_CHECKING(for the Mesa graphics library)
+AC_TRY_LINK([
+#include <GL/glut.h>
+],[
+glutInitWindowSize(400,400);
+glutCreateWindow("test");
+glEnable(GL_DEPTH_TEST);
+glShadeModel(GL_FLAT);
+],AC_MSG_RESULT(yes),AC_MSG_ERROR([
+Unable to link to Mesa library. If you
+just installed it: try running ldconfig
+as root]))
+
+dnl libdinner (our library)
+AC_CHECK_HEADERS(dinner.h,,AC_MSG_ERROR([
+dinner.h not found; maybe libdinner was not
+installed ? The hungryhacker package uses the
+libdinner library. Install libdinner first.]))
+
+AC_CHECK_LIB(dinner,dinner_open,,AC_MSG_ERROR([
+could not link to libdinner. The hungryhacker
+package uses the libdinner library. Install
+libdinner first.]))
+
+AC_OUTPUT(Makefile src/Makefile)
+</pre>
+</td></tr></table>
+<p>
+The only difference from previous examples is src/vdinner.c
+in AC_INIT and src/Makefile in AC_OUTPUT (it does use some
+macros we haven't used before, like AC_PATH_XTRA and
+AC_TRY_LINK, but due to this package' idiosyncrasies, not
+for its topology).
+<p>
+We need a <i>Makefile.am</i> file in every directory. This is the
+top-level directory <i>Makefile.am</i>:
+<p>
+<table border=0 cellspacing=0 cellpadding=5 width=80%>
+<tr><td bgcolor=#000000><font color=#ffffff>
+<font size=4>vdinner (Example 5): Makefile.am</font>
+</td></tr><tr><td bgcolor=#ceffce>
+<pre>
+AUTOMAKE_OPTIONS = gnu
+SUBDIRS = src
+</pre>
+</td></tr></table>
+<p>
+Quite straightforward. The directories should be listed in
+SUBDIRS in the order you wish them to be built. This is
+important when one subdirectory depends on other
+subdirectories, which is not the case here. SUBDIRS must
+not list sub-subdirectories. If you want to have
+source code in <tt>src/another</tt> , you must add
+<tt>src</tt> to the SUBDIRS variable in the top-level <i>Makefile.am</i>
+and add <tt>another</tt> to the SUBDIRS variable in the
+<i>src/Makefile.am</i> file.
+<p>
+And this is the <i>Makefile.am</i> file in <tt>src</tt>:
+<p>
+<table border=0 cellspacing=0 cellpadding=5 width=80%>
+<tr><td bgcolor=#000000><font color=#ffffff>
+<font size=4>vdinner (Example 5): src/Makefile.am</font>
+</td></tr><tr><td bgcolor=#ceffce>
+<pre>
+bin_PROGRAMS = vdinner
+
+vdinner_SOURCES = vdinner.c models.c
+
+noinst_HEADERS = models.h
+
+man_MANS = vdinner.1x
+
+EXTRA_DIST = vdinner.1x
+</pre>
+</td></tr></table>
+<p>
+It also has nothing different from what we discussed in the previous
+sections.
+<p>
+Automake must be run <b>from the top-level directory only</b>. It will
+automatically descend into all SUBDIRS and create the associated
+Makefile.in files. If you try running automake from an inner
+directory it will complain about the lack of a configure.in there,
+but you don't need one.
+<p>
+<h3>Deep Example</h3>
+As an example of a deep topology, we'll put all four programs
+(dinnerd, libdinner, hungryhacker and vdinner) in one package.
+We'll call this all-in-one package the <i>dinnersuite</i>.
+First we create a <tt>dinnersuite</tt> directory and
+unpack the distribution tarballs into it. I'll also
+rename the unpacked directories to remove the version
+string from the name, but it's not needed. Now we have this
+directory tree:
+<p>
+<pre>
++ dinnersuite
+      |
+      +--- dinnerd
+      |
+      +--- hungryhacker
+      |
+      +--- libdinner
+      |
+      +--- vdinner
+              |
+              +--- src
+</pre>
+<p>
+The first thing to do is writing the top-level <i>configure.in</i>
+and <i>Makefile.am</i> files. <i>Makefile.am</i> becomes:
+<p>
+<table border=0 cellspacing=0 cellpadding=5 width=80%>
+<tr><td bgcolor=#000000><font color=#ffffff>
+<font size=4>dinnersuite (Example 6): Makefile.am</font>
+</td></tr><tr><td bgcolor=#ceffce>
+<pre>
+AUTOMAKE_OPTIONS = foreign
+SUBDIRS = dinnerd libdinner hungryhacker vdinner
+</pre>
+</td></tr></table>
+<p>
+hungryhacker and vdinner depend on libdinner, so they must
+be built only after libdinner. <i>configure.in</i> becomes:
+<p>
+<table border=0 cellspacing=0 cellpadding=5 width=80%>
+<tr><td bgcolor=#000000><font color=#ffffff>
+<font size=4>dinnersuite (Example 6): configure.in</font>
+</td></tr><tr><td bgcolor=#ceffce>
+<pre>
+AC_INIT(dinnerd/dinnerd.c)
+AM_INIT_AUTOMAKE(dinnersuite,0.0.1)
+AC_CONFIG_SUBDIRS(dinnerd libdinner hungryhacker vdinner)
+AC_OUTPUT(Makefile)
+</pre>
+</td></tr></table>
+<p>
+Notice that we don't need to AC_OUTPUT anything below the top-level
+directory: this task is delegated to the configure scripts
+inside each subdirectory by the <b>AC_CONFIG_SUBDIRS</b> macro.
+<p>
+If we run autoconf and automake now, we'll have everything
+generated, but in this particular package we must do more,
+to deal with dependencies: <i>hungryhacker</i> and <i>vdinner</i>
+will check for <i>libdinner</i> in their configure scripts,
+but in configure time the library is not yet built or
+installed. And we don't need to check it: we're providing it
+in our package.
+<p>
+Also, we want the user to configure all packages at once,
+compile all packages at once, then install all packages
+at once. But the packages that depend on <i>libdinner</i>
+will fail to compile before the library is correctly installed.
+We will add libtool support to these packages and change their
+makefile.am files to link the library from the distribution
+directory. On <i>hungryhacker</i>, we change the <i>configure.in</i>
+file to:
+<p>
+<table border=0 cellspacing=0 cellpadding=5 width=80%>
+<tr><td bgcolor=#000000><font color=#ffffff>
+<font size=4>dinnersuite (Example 6): hungryhacker/configure.in</font>
+</td></tr><tr><td bgcolor=#ceffce>
+<pre>
+AUTOMAKE_OPTS = gnu
+bin_PROGRAMS = hungryhacker
+
+hungryhacker_SOURCES = hacker.c
+hungryhacker_LDADD = ../libdinner/libdinner.la
+INCLUDES = -I../libdinner
+
+man_MANS = hungryhacker.1
+
+EXTRA_DIST = sample.sh hungryhacker.1
+</pre>
+</td></tr></table>
+<p>
+The differences from the stand-alone package are the
+hungryhacker_LDADD and INCLUDES lines. The INCLUDES
+line tells the compiler where to find <tt>dinner.h</tt>
+before it is installed to @prefix@/include. The LDADD
+line asks to link against the library file in the
+<i>libdinner</i> directory. The .la format depends on
+libtool for linking, so we must also change <i>configure.in</i>,
+where we add libtool support (AM_PROG_LIBTOOL) and remove
+the checks for <i>libdinner</i> (because we know we have it):
+<p>
+<table border=0 cellspacing=0 cellpadding=5 width=80%>
+<tr><td bgcolor=#000000><font color=#ffffff>
+<font size=4>dinnersuite (Example 6): hungryhacker/Makefile.am</font>
+</td></tr><tr><td bgcolor=#ceffce>
+<pre>
+AC_INIT(hacker.c)
+AM_INIT_AUTOMAKE(hungryhacker,0.0.1)
+AM_CONFIG_HEADER(config.h)
+AM_PROG_LIBTOOL
+
+AC_PROG_INSTALL
+AC_PROG_MAKE_SET
+
+AC_PROG_CC
+AC_LANG_C
+
+AC_HEADER_STDC
+
+AC_CHECK_HEADERS(assert.h errno.h unistd.h time.h,,AC_MSG_ERROR([
+required header missing]))
+
+AC_OUTPUT(Makefile)
+</pre>
+</td></tr></table>
+<p>
+The changes to the <i>vdinner</i> package are similar. Since the
+affected directory is <tt>src</tt>, the INCLUDES and LDADD lines need an
+extra .. each to reach the libdinner directory
+<p>
+You'll notice, if you try to compile the dinnersuite tarball
+(<a href="examples/dinnersuite-0.0.1.tar.gz">dinnersuite-0.0.1.tar.gz</a>),
+that the <tt>configure</tt> step takes much long and is redundant,
+because it calls configure scripts recursively in each directory.
+<p>
+Our dinnersuite package is also space-inefficient, it includes
+libtool in three of its subdirectories (libdinner, hungryhackers
+and vdinner). Deep topologies may integrate packages fast, but
+you should avoid this kind of package. Spending some time
+on writing an integrated top-level <i>configure.in</i> (shallow
+topology) results in more efficient configuration and building processes.
+</ul>
+
+<a name="breeding">
+<h2>11. Breeding</h2><ul>
+</a>
+Until now we presented a technical tutorial teaching how to
+use several programs -- autoconf, automake, autoheader, aclocal,
+libtool -- but our argument on why using them at all is very short-sighted.
+It concerns only the direct end-users of your software package: that
+you should make your software package fast, easy, simple and
+uneventful to get, build and install. We presented another argument,
+also short-sighted, and it sounds more like a threat: if you don't make it
+simple, users will give up on trying your software.
+<p>
+Here we provide advice on using your time and your community's in an
+efficient way. There will always be work to do in the Free
+Software camp (new hardware,
+new algorithms, new standards, new protocols and new habits in an
+ever-changing society are just some of the driving forces).
+<p>
+<b>Detectability</b>. If your software provides an useful service,
+it happens quite often
+that people want to build other software that depends on yours.
+This software will have its own building and installation process,
+and if it is written correctly, it won't just assume your
+software (on which it depends) is there, it'll check for it in some way.
+When you write a software others will probably depend on, <b>document</b>
+the way(s) to detect it. We depict the most usual, expected behavior:
+<p>
+(a) Install your software in standard places. If you're using
+<b>automake</b> you're probably doing so already. Placing
+your binary under <tt>/var/coolstuff/lib/etc/boing/bin</tt>
+is much like not placing it anywhere at all. Doing a
+<tt>find / -name "foo"</tt> isn't practical and can take
+hours or even days to complete on systems that mount directories
+from a network (NFS is sooo transparent...)
+<p>
+(b) Provide version information. The standard is to print a
+version string and exit without further action when the <tt>-v</tt>
+or <tt>--version</tt> options are given in the command line. If
+you want to provide the version information in a different way, it's
+ok, but you must document it somewhere. A man page is probably the best
+place.
+<p>
+(c) For libraries, the most common way to check for presence is
+trying to link a small program. Document in the library changelogs
+the API changes. This way, if you introduced a float foo_bar(int,int)
+call in version X.Y.Z, users can detect versions &gt;= X.Y.Z by trying
+to link a program that calls that function.
+<p>
+(d) Many software packages (usually large ones) provide a
+<tt>programname-config</tt> script that is installed together
+with the program, that will provide information on version,
+include file paths, library paths, features, etc. Examples
+are GTK+ (gtk-config), Gimp (gimp-config), XMMS (xmms-config) and
+Gnome (gnome-config). Below we show an example of output for the
+gtk-config script.
+<ul>
+<pre>
+galadriel:~$ gtk-config   
+Usage: gtk-config [OPTIONS] [LIBRARIES]
+Options:
+        [--prefix[=DIR]]
+        [--exec-prefix[=DIR]]
+        [--version]
+        [--libs]
+        [--cflags]
+Libraries:
+        gtk
+        gthread
+galadriel:~$ gtk-config --version
+1.2.8
+galadriel:~$ gtk-config --cflags 
+-I/usr/lib/glib/include
+galadriel:~$ gtk-config --libs  
+-L/usr/lib -L/usr/X11/lib -lgtk -lgdk -rdynamic -lgmodule -lglib -ldl -lXext -lX11 -lm
+</pre>
+</ul>
+Writing such a script is trivial. The substitutions for @prefix@ paths and
+included features can be scripted with autoconf in a reasonably easy way.
+<p>
+(e) Provide m4 macros to perform checks and tests on/for your software.
+The best behavior is to install these to the <tt>@prefix@/share/aclocal</tt>
+directory with the name <tt>yourpackage.m4</tt>. This way other
+developers may use the macros in their <i>configure.in</i> input
+files and <b>aclocal</b> will automatically look for the missing
+macros and place them in the aclocal.m4 of the distribution of the
+package that depends on yours.
+<p>
+<b>Compatibility</b>. Make your software usable by the widest range
+of people possible. For example: when writing a library, it is
+quite easy to turn down C++ programmers by not enclosing the
+function prototypes in the public header files in <tt>extern "C"</tt>
+blocks. A way to do this in a portable manner is shown in the
+<tt>dinner.h</tt> header of <i>libdinner</i>, the example library of
+<a href="#libtool">the libtool section</a>.
+<p>
+<b>Extensibility</b>. Releasing the code under a copyleft
+license like the GNU GPL does 99% of the job here.
+You can't extend when you don't have the code
+(or you have it but are legally forbidden to use/distribute
+the modified code). But you can go further for the last 1% and
+write comments on important parts of your code, emphasizing
+what have not been implemented in the best possible way (or you
+didn't spend time finding out what the best possible way was), so
+that people willing to extend and enhance your code go
+straight to the spot.
+<p>
+<b>Cooperability</b>. When a group of programmers is working 
+concurrently on a project, it is a good idea to split
+the functionality of the software across separate source files.
+Most versioning systems (like CVS) use file granularity: while it will
+try to merge changes from 2 programmers to a same file into one
+working frankenstein creature, it is not always successful. Splitting
+the source across several files reduces the risk of conflict.
+Some programmers don't like to do it because they needed to write
+new Makefile rules to track source file dependency. But now you
+know how to use autoconf and automake, adding another source file
+means adding one more .c filename to </i>Makefile.am</i> and rerunning
+<i>automake</i> and <i>configure</i>.
+<p>
+<b>Add, don't divide.</b> Is an operating system with 562 graphical
+IRC clients better than the same operating system with 67 graphical
+IRC clients ? Focus on enhancing currently existing software
+instead of duplicating efforts. If the authors of the current
+software are unwilling to take your patches or accept your help,
+don't start from scratch, and make sure not to fall in the same
+trap your predecessors fell: keep the door open for new developers
+and people willing to help.
+<p>
+</ul>
+<a name="bibliography">
+<h2>Bibliography</h2><ul>
+</a>
+<h3>Manuals</h3>
+
+<strong>Autoconf Manual</strong>, David MacKenzie, Ben Elliston<br>
+HTML: <a href="http://www.gnu.org/manual/autoconf/index.html">http://www.gnu.org/manual/autoconf/index.html</a>
+<p>
+<strong>Automake Manual</strong>, David MacKenzie, Tom Tromey<br>
+HTML: <a href="http://www.gnu.org/manual/automake/index.html">http://www.gnu.org/manual/automake/index.html</a>
+<p>
+<strong>Libtool Manual</strong>,<br>
+HTML: <a href="http://www.gnu.org/software/libtool/manual.html">http://www.gnu.org/software/libtool/manual.html</a>
+<p>
+<strong>GNU m4 Manual</strong>, Ren&egrave; Seindal<br>
+HTML: <a href="http://www.gnu.org/manual/m4/index.html">http://www.gnu.org/manual/m4/index.html</a>
+<p>
+<strong>GNU make Manual</strong>, Richard M. Stallman, Roland McGrath<br>
+HTML: <a href="http://www.gnu.org/manual/make/index.html">http://www.gnu.org/manual/make/index.html</a>
+<p>
+
+<h3>Recommended reading</h3>
+
+<strong>Software Release Practice HOWTO</strong>, Eric S. Raymond<br>
+HTML: <a href="http://www.linuxdoc.org/HOWTO/Software-Release-Practice-HOWTO/index.html">http://www.linuxdoc.org/HOWTO/Software-Release-Practice-HOWTO/index.html</a><br>
+Text: <a href="http://www.ibiblio.org/pub/Linux/docs/HOWTO/Software-Release-Practice-HOWTO">http://www.ibiblio.org/pub/Linux/docs/HOWTO/Software-Release-Practice-HOWTO</a>
+<p>
+<strong>BASH Programming Introduction HOWTO</strong>, Mike G<br>
+HTML: <a href="http://www.linuxdoc.org/HOWTO/Bash-Prog-Intro-HOWTO.html">http://www.linuxdoc.org/HOWTO/Bash-Prog-Intro-HOWTO.html</a><br>
+Text: <a href="http://www.ibiblio.org/pub/Linux/docs/HOWTO/Bash-Prog-Intro-HOWTO">http://www.ibiblio.org/pub/Linux/docs/HOWTO/Bash-Prog-Intro-HOWTO</a>
+<p>
+<strong>GNU Coding Standards</strong>, Richard M. Stallman<br>
+HTML: <a href="http://www.gnu.org/prep/standards.html">http://www.gnu.org/prep/standards.html</a>
+<p>
+<strong>CVS Documentation</strong>, various documents<br>
+<a href="http://www.cvshome.org/docs/index.html">http://www.cvshome.org/docs/index.html</a>
+<p>
+
+<h3>More</h3>
+
+<strong>/* You Are Expected to Understand This */</strong>, Andrew Arensburger<br>
+HTML: <a href="http://freshmeat.net/articles/view/238/">http://freshmeat.net/articles/view/238/</a>
+<p>
+
+</ul>
+
+<a name="copyleft">
+<h2>Copyright Notice</h2><ul>
+</a>
+This document and the source code for GDU, dinnerd, libdinner,
+hungryhacker and vdinner are
+(C) 2001 Felipe Bergo and the
+<a href="http://www.seul.org">Simple End User Linux</a>
+Project.
+<p>
+The document per se (text and figures) is published under the terms of the
+<a href="http://www.gnu.org/copyleft/fdl.html">GNU Free Documentation License</a>.
+<p>
+GDU, dinnerd, libdinner, hungryhacker and vdinner can be distributed and
+modified under the terms of the
+<a href="http://www.gnu.org/copyleft/gpl.html">GNU General Public License</a>.
+<p>
+<pre>
+GDU, dinnerd, libdinner, hungryhacker and vdinner may be copied,
+distributed and/or modified under the terms of the GNU General
+Public License, version 2 or any later version published by the
+Free Software Foundation.
+</pre>
+<p>
+<pre>
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.1
+or any later version published by the Free Software Foundation;
+this document has no Invariant Sections, no Front-Cover Texts and
+no Back-Cover Texts.
+</pre>
+</ul>
+
+<a name="thanks">
+<h2>Thanks</h2>
+</a>
+<ul>
+to Pete St. Onge who sent some patches to the
+text.
+</ul>
+
+<a name="offline">
+<h2>Other Formats</h2>
+</a>
+<ul>
+For offline reading and/or printing, here are some packages
+of this tutorial:
+<p>
+<a href="downloads/autotut-1.0-htmlfull.tar.gz">TAR+GZ Archive with HTML, Images and source code for all examples</a> <i>750 KB</i>
+<p>
+<a href="downloads/autotut-1.0.html.tar.gz">TAR+GZ Archive with HTML and Images</a> <i>79 KB</i>
+<p>
+<a href="downloads/autotut-1.0.ps.gz">PostScript Document (Compressed with gzip)</a> <i>175 KB</i>
+<p>
+Please support a PDF-free world and don't convert this document
+to PDF.
+<p>
+</ul>
+
+<hr noshade size=1>
+
+</body>
+</html>

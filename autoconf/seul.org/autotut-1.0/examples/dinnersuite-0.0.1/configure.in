@@ -1,0 +1,5 @@
+AC_INIT(dinnerd/dinnerd.c)
+AM_INIT_AUTOMAKE(dinnersuite,0.0.1)
+AC_CONFIG_SUBDIRS(dinnerd libdinner hungryhacker vdinner)
+AC_OUTPUT(Makefile)
+

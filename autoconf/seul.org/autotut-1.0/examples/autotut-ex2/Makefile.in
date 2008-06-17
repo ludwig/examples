@@ -1,0 +1,15 @@
+CC = @CC@
+VERSION = @VERSION@
+CFLAGS = @CFLAGS@
+
+all: pi-bin
+
+pi-bin: pi.c
+	$(CC) $(CFLAGS) -DVERSION=\"$(VERSION)\" pi.c -o pi
+
+clean:
+	rm -f pi
+
+distclean:
+	rm -f pi config.* Makefile
+

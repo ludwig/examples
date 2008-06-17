@@ -1,0 +1,46 @@
+.TH VDINNER 1X "14 Apr 2001" "Free Software" "User Manuals"
+.SH NAME
+vdinner \- Virtual Dinner
+.SH SYNOPSIS
+vdinner [-h hostname] [-p port]
+
+.SH DESCRIPTION
+vdinner is a Mesa-based visualization client for
+dinnerd(8). It watches the state of the table on
+the Dining Hackers protocol by rendering it
+in 3D.
+
+.SH "COMMAND LINE OPTIONS"
+.IP "-h hostname"
+connects to \fBhostname\fR instead of localhost.
+.IP "-p port"
+connects to baseport \fBport\fR instead of 8081.
+
+.SH "KEYS"
+.IP "ARROWS"
+rotate the view
+.IP "- and ="
+zoom in/out
+.IP "p"
+pause toggle
+.IP "f"
+print framerate stats
+.IP "1"
+toggles smooth and flat shade models.
+.IP "2"
+alternates between POINT, LINE (wireframe) and
+FILL (normal) modes.
+.IP "3"
+toggles use of colors on materials.
+.IP "ESC"
+quits vdinner
+
+.SH "AUTHOR"
+vdinner (and the Dining Hackers protocol) was implemented
+and created by Felipe Bergo <bergo@seul.org> as an example
+for a tutorial.
+
+.SH "SEE ALSO"
+\fBhungryhacker\fR(1), \fBdinnerd\fR(8)
+
+

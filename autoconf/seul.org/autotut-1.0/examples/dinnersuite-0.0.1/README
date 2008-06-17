@@ -1,0 +1,25 @@
+
+The Dining Hackers Suite
+-------------------------
+
+This package includes four programs:
+
+dinnerd     : the Dining Hackers daemon
+libdinner   : library with functions to access the
+              daemon
+hungryhacker: a simple client for dinnerd
+vdinner     : a 3D visualization of the status of
+              dinnerd
+
+vdinner requires the X11 windowing system and the
+Mesa graphics library.
+
+The protocol is described in dinnerd/DiningHackers.txt
+
+This is an example of aggregating several packages into
+one. The NEWS file describes the changes in the
+automake/autoconf files.
+
+-- Felipe Bergo <bergo@seul.org>
+
+

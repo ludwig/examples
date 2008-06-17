@@ -1,0 +1,28 @@
+
+hungryhacker
+------------
+
+Felipe Bergo, <bergo@seul.org>
+
+
+hungryhacker is a client program for dinnerd.
+It uses libdinner to access the dinnerd server.
+
+The syntax for hungryhacker is
+
+hungryhacker [-h host] [-p port] [-n name]
+             [-s strength] [-d dexterity] [-a aggressivity]
+
+strength, dexterity and aggressivity work better in the [5,15]
+interval.
+
+When not specified, the parameters default to:
+
+host: localhost
+port: 8081
+name: random three letter login
+ST, DX, Aggr: random value in [5,15]
+
+See the sample.sh script for an example of usage.
+
+

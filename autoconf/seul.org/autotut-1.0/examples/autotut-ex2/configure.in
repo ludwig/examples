@@ -1,0 +1,17 @@
+AC_INIT(pi.c)
+AC_CONFIG_HEADER(config.h)
+
+dnl find and test the C compiler
+AC_PROG_CC
+AC_LANG_C
+
+AC_PROG_MAKE_SET
+
+AC_HEADER_STDC
+AC_CHECK_FUNCS(atol atoi strtod)
+
+VERSION="0.0.1-rc2"
+AC_SUBST(VERSION)
+
+dnl read Makefile.in and config.h.in, write Makefile and config.h
+AC_OUTPUT(Makefile)

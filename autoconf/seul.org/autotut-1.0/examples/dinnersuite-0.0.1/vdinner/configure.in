@@ -1,0 +1,45 @@
+AC_INIT(src/vdinner.c)
+AM_INIT_AUTOMAKE(vdinner,0.0.1)
+AM_CONFIG_HEADER(config.h)
+AM_PROG_LIBTOOL
+
+AC_PROG_INSTALL
+
+CFLAGS=
+
+AC_PROG_CC
+AC_LANG_C
+AC_PROG_MAKE_SET
+
+AC_HEADER_STDC
+
+AC_CHECK_HEADERS(ctype.h sys/time.h unistd.h math.h,,AC_MSG_ERROR([
+required header files missing]))
+
+AC_PATH_XTRA
+
+dnl check for Mesa
+
+AC_CHECK_HEADERS(GL/glut.h,,AC_MSG_ERROR([
+Mesa header not found. The Mesa graphics
+library is required to compile and run
+vdinner.
+Check http://mesa3d.sourceforge.net]))
+
+CFLAGS="$CFLAGS $X_CFLAGS"
+LIBS="$X_PRE_LIBS $X_LIBS -lX11 -lXext -lXmu -lXt $X_EXTRA_LIBS -lGL -lGLU -lglut -lm"
+
+AC_MSG_CHECKING(for the Mesa graphics library)
+AC_TRY_LINK([
+#include <GL/glut.h>
+],[
+glutInitWindowSize(400,400);
+glutCreateWindow("test");
+glEnable(GL_DEPTH_TEST);
+glShadeModel(GL_FLAT);
+],AC_MSG_RESULT(yes),AC_MSG_ERROR([
+Unable to link to Mesa library. If you
+just installed it: try running ldconfig
+as root]))
+
+AC_OUTPUT(Makefile src/Makefile)

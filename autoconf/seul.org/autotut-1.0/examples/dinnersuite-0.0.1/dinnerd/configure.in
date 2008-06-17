@@ -1,0 +1,39 @@
+AC_INIT(dinnerd.c)
+AM_INIT_AUTOMAKE(dinnerd,1.0.0)
+AM_CONFIG_HEADER(config.h)
+
+AC_PROG_INSTALL
+
+AC_PROG_CC
+AC_LANG_C
+
+AC_PROG_MAKE_SET
+
+AC_HEADER_STDC
+AC_CHECK_HEADERS(errno.h fcntl.h netinet/in.h signal.h sys/socket.h sys/time.h sys/types.h time.h unistd.h,,AC_MSG_ERROR([
+required header file missing]))
+
+AC_CHECK_FUNCS(usleep socket bind listen accept shutdown,,AC_MSG_ERROR([
+requires library functions missing]))
+
+dnl check for socklen_t
+dnl AC_CHECK_TYPE fails because this one, if existent, is
+dnl in the sys/socket.h includes. Must try compiling a sample prog
+dnl this is usually the way to go when you can't find an autoconf
+dnl macro to do a decent check on what you need
+
+AC_MSG_CHECKING(whether socklen_t exists)
+AC_TRY_COMPILE([
+#include <sys/socket.h>
+#include <sys/types.h>
+],[
+socklen_t a,b;
+a=2;
+b=4;
+a+=b;
+],[
+AC_DEFINE(HAVE_socklen_t)
+AC_MSG_RESULT(yes)],AC_MSG_RESULT(no))
+
+
+AC_OUTPUT(Makefile)

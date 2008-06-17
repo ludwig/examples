@@ -1,0 +1,52 @@
+
+                  vdinner README
+                  --------------
+
+vdinner is a Mesa-based dinnerd status visualization.
+
+You need, to compile it:
+
+- X11
+- Mesa
+- libdinner
+
+To be usable, you'll want dinnerd and hungryhacker
+(which happen to be server and client for the
+dining hackers protocol).
+
+The protocol itself is described in the dinnerd
+distribution.
+
+Running it:
+
+once you have dinnerd running, run vdinner with
+
+vdinner [-h hostname] [-p clientport]
+
+the clientport is 8081 (the current dinnerd implementation
+won't allow other port). If you don't provide a hostname
+it will connect to localhost. If you're running the dinnerd
+server locally, you may run vdinner without parameters.
+
+Once vdinner is running, you can control the visualization
+with the following keys:
+
+ARROWS       - rotate the view
+- and =      - zoom (the keys after the zero in the main keyboard)
+p            - pause (good for taking screenshots)
+f            - print information about framerate
+ESC          - exit
+1            - toggles shade model SMOOTH / FLAT
+2            - alternates between POINT, LINE (wireframe) and
+               FILL (normal) modes
+3            - toggles use of colors on materials
+
+Guys in red clothes are eating, guys in yellow are not.
+The purple "biff" signs mean the guy took a punch
+from one of the neighbours
+
+enjoy.
+
+-- Felipe Bergo <bergo@seul.org>
+
+

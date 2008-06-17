@@ -1,0 +1,17 @@
+
+gdu - GTK+ Disk Usage Browser
+
+gdu browses graphically the output of the du command.
+
+you may click the boxes with text labels to run du on
+that particular directory.
+
+gdu requires GTK+ 1.2.6 or later (http://www.gtk.org)
+
+It was written as an example for the autotut tutorial.
+
+See INSTALL for building instructions, COPYING for
+the license.
+
+-- Felipe Bergo <bergo@seul.org>
+April 10th, 2001

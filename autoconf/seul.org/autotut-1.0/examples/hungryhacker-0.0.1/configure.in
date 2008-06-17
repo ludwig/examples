@@ -1,0 +1,29 @@
+AC_INIT(hacker.c)
+AM_INIT_AUTOMAKE(hungryhacker,0.0.1)
+AM_CONFIG_HEADER(config.h)
+
+AC_PROG_INSTALL
+AC_PROG_MAKE_SET
+
+AC_PROG_CC
+AC_LANG_C
+
+AC_HEADER_STDC
+
+AC_CHECK_HEADERS(assert.h errno.h unistd.h time.h,,AC_MSG_ERROR([
+required header missing]))
+
+AC_CHECK_HEADERS(dinner.h,,AC_MSG_ERROR([
+ required header missing; install libdinner first
+]))
+
+
+AC_CHECK_LIB(dinner,dinner_open,,AC_MSG_ERROR([
+ could not link to libdinner. The hungryhacker
+ package uses the libdinner library. Install libdinner
+ first. If you have already done so; please run ldconfig
+ as root or check whether the path libdinner was installed
+ to is in your LD_LIBRARY_PATH
+]))
+
+AC_OUTPUT(Makefile)
