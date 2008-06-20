@@ -1,0 +1,101 @@
+#!/usr/bin/perl
+#
+# Analyze complexity of independent (non-classed) functions in python code
+# 
+# __________________________________________________________________
+#    Web-Based Time Tracking                      journyx WebTime
+#    is FREE for 60 Days at                        (512)834-8888
+#  http://journyx.com/wts.html                  curt@journyx.com
+# ------------------------------------------------------------------
+#
+# The following program is offered freely into the public domain by journyx
+# and can be used however you want as long as you keep these comments and
+# understand that this code has no warranties at all.
+#
+# This program tells you which of your non-classed python functions are too
+# long, complex, untestable, etc.
+#
+# One essential ingredient in any testing methodology is to limit
+# the program logic during development so that the program can be
+# understood, and the amount of testing required to verify the logic
+# is not overwhelming.  A developer who, ignorant of the implications
+# of complexity, expects to verify a module which has 30 if statements and
+# a bunch of for loops in it is heading for disaster.
+#
+# This program helps you look thru large bodies of code to find offenders.
+#
+
+while (<>) {
+    next if (/^\s*$/);
+    next if (/^\s*#.*$/);
+    next if (/^\s*""".*"""\s*$/);
+    if (/"""/) {
+        if (!(/""".*"""/)){
+            if ($comment) { $comment=0; next; } 
+                else  { $comment=1; } 
+        }
+    }
+    next if ($comment);
+
+    $loc++;     #lines of real code
+
+    # Count complex lines
+    if (    /\s+if\s.*:/        || /\s+try.*:/    ||        
+        /\s+for\s.*:/       || /\s+while.*:/  ||    
+        /\s+return/         || /\s+continue/  ||    
+        /\s+break/      || /\s+raise\s.*/ ){
+            $cmplex++;
+    }
+
+    # find end of a def
+    if ($lookfordefend && /^[a-zA-Z]/) {
+        $lookfordefend = 0;
+        $defe{$dnam} = $loc-1;
+        $defer{$dnam} = $. - 1;
+        $defec{$dnam} = $cmplex;
+    }
+        
+    # find start of a def
+    if (/^def/) {
+        ($c,$dnam,$rest) = split;
+        $dnam =~ s/[:\(].*$//;
+        $defb{$dnam} = $loc;
+        $defbr{$dnam} = $.;
+        $defbc{$dnam} = $cmplex;
+        $lookfordefend = 1;
+        next;
+    }
+    
+}
+
+if (!$defe{$dnam}) {
+    $defe{$dnam} = $loc-1;
+    $defer{$dnam} = $. - 1;
+    $defec{$dnam} = $cmplex;
+}
+
+print "\n";
+print $loc . " lines of code found in " . $. . " lines with density " ;
+printf( "%.1f%%  \n", 100*$loc/$. );
+print "\n";
+
+
+$dn=$0;
+$dn =~ s%/[^/]*$%/%;
+
+open (T,"|$dn/tab|sort -n -k 5") || die "no tab?";
+
+print T "Classless_Function Firstline Lastline Textlines LOC Complexity\n\n";
+foreach $k (sort keys %defb) {
+    $bl = $defb{$k};
+    $el = $defe{$k};
+    $blr = $defbr{$k};
+    $elr = $defer{$k};
+    $cmplx = $defec{$k} -  $defbc{$k} +1;
+    print T $k ." ". $blr ." ". $elr ." ". ($elr-$blr)  ." ". ($el-$bl) 
+            ." ". $cmplx . "\n";
+}
+close T;
+print "\n";
+
+

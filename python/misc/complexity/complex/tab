@@ -1,0 +1,89 @@
+#!/usr/bin/perl
+# 
+# Save this file as "tab"
+#
+# __________________________________________________________________
+#  Web-Based Project Management                              Journyx
+#  and TimeSheet Software                              (800)755-9878
+#  FREE at http://journyx.com/clf                   curt .at. JOURNYX.com
+# ------------------------------------------------------------------
+#
+# This was originally written by Rob Mayoff of dqd.com around 1995 or so.
+# It's free.  Steal it.
+#
+
+require "getopts.pl";
+&Getopts('F:n:o:') || &usage();
+
+if ($opt_n) { 
+    $num_cols = $opt_n; 
+} else { 
+    $num_cols = 6553512; 
+}
+
+
+if ($opt_F) {
+    if (substr($opt_F, 0, 1) eq "/") { 
+        $isep = substr($opt_F, 1); 
+    } else { 
+        $isep = $opt_F; }
+} else { 
+    $isep = "\\s+"; 
+}
+
+if ($opt_o) { 
+    $osep = $opt_o; 
+} else { 
+    $osep = " "; 
+}
+
+while(<>)   # read in all the lines
+{
+    chop;
+    s/^\s+//;
+    @fld = split(/$isep/, $_, $num_cols);
+    for($i = 0; $i <= $#fld; $i++) { 
+        if ($fld[$i] !~ /^[0-9 \t]+$/)  {
+            $leftjust[$i] = "-"     # set non-numeric status
+        }
+    }
+    if (($#fld + 1) > $max_flds) {
+        $max_flds = $#fld + 1 ;
+    }
+    for ($i = 0; $i <= $#fld; $i++)
+    {
+        $line{"$./$i"} = $fld[$i];
+        if (length($fld[$i]) > $max_wid[$i]) {
+            $max_wid[$i] = length($fld[$i])
+        }
+    }
+}
+
+for($i = 0; $i < $max_flds - 1; $i++) {     # set all the formats
+    $form[$i] = "%$leftjust[$i]$max_wid[$i]s$osep";
+}
+$form[$i] .= "%$leftjust[$i]$max_wid[$i]s";
+
+for($i = 1; $i <= $.; $i++) {   # write out all the lines
+    $lin =  "";
+    for($j = 0; $j < $max_flds; $j++) { 
+        $lin .= sprintf($form[$j], $line{"$i/$j"}); 
+    }
+    $lin =~ s/ +$//;    # axe trailing spaces
+    print $lin;
+    print "\n";
+}
+
+sub usage {
+print <<here;
+  tabit [ -n ] [ -F /re ] [ -o outstr ] file1 file2 <stdin
+ 
+  -F /re  Regular expression re is the field separator.
+  -o str  str is the output column seperator.
+  -n num  Alter only num cols; leave rest alone.
+here
+die "bad args";
+}
+
+
+

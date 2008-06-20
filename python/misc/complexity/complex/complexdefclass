@@ -1,0 +1,153 @@
+#!/usr/bin/perl
+# Analyze real length and complexity of python classes/funcs
+#
+# 
+# __________________________________________________________________
+#    Web-Based Time Tracking                      journyx WebTime
+#    is FREE for 60 Days at                        (512)834-8888
+#  http://journyx.com/wts.html                  curt@journyx.com
+# ------------------------------------------------------------------
+#
+# The following program is offered freely into the public domain by Journyx.com
+# and can be used however you want as long as you keep these comments and
+# understand that this code has no warranties at all.
+#
+# This program tells you which of your python classes and functions are too
+# long, complex, untestable, etc.
+#
+# One essential ingredient in any testing methodology is to limit
+# the program logic during development so that the program can be
+# understood, and the amount of testing required to verify the logic
+# is not overwhelming.  A developer who, ignorant of the implications
+# of complexity, expects to verify a module which has 30 if statements and
+# a bunch of for loops in it is heading for disaster.
+#
+# This program helps you look thru large bodies of code to find potential offenders.
+#
+# The complexity number spit out for an entire class doesn't have much relevance
+# really.
+# 
+
+
+while (<>) {
+    next if (/^\s*$/);
+    next if (/^\s*#.*$/);
+    next if (/^\s*""".*"""\s*$/);
+    if (/"""/) {
+        if (!(/""".*"""/)){
+            if ($comment) { $comment=0; next; } 
+                else  { $comment=1; } 
+        }
+    }
+    next if ($comment);
+
+    $loc++;
+
+    # Count complex lines
+    if (    /\s+if\s.*:/        || /\s+try.*:/    ||        
+        /\s+for\s.*:/       || /\s+while.*:/  ||    
+        /\s+return/         || /\s+continue/  ||    
+        /\s+break/      || /\s+raise\s.*/ ){
+            $cmplex++;
+    }
+
+    # find end of a class
+    if ($lookforclassend && /^[a-zA-Z]/) {
+        $lookforclassend = 0;
+        $classe{$cnam} = $loc-1;
+        $classer{$cnam} = $. - 1;
+        $classec{$cnam} = $cmplex;
+    }
+
+    
+
+    # Analyze functions within a class
+    if ($lookfordefend ) {
+        # defend=classend or newdef
+        if ($classe{$cnam} || /^\s+def\s/) {
+            $lookfordefend = 0;
+            $funce{$cdnam} = $loc - 1;
+            $funcer{$cdnam} = $. - 1;
+            $funcec{$cdnam} = $cmplex;
+        }
+    } 
+    # find def start
+    if (/^\s+def\s/) {
+        ($d,$dnam,$rest) = split;
+        $dnam =~ s/[:\(].*$//;
+        $cdnam = $cnam . "." . $dnam;
+        $funcb{$cdnam} = $loc;
+        $funcbr{$cdnam} = $.;
+        $funcbc{$cdnam} = $cmplex;
+        $lookfordefend = 1;
+    }
+        
+    # find start of a class
+    if (/^class/) {
+        ($c,$cnam,$rest) = split;
+        $cnam =~ s/[:\(].*$//;
+        $classb{$cnam} = $loc;
+        $classbr{$cnam} = $.;
+        $classbc{$cnam} = $cmplex;
+        $lookforclassend = 1;
+        next;
+    }
+    
+}
+# find end of a class
+if (!$classe{$cnam}) {
+    $lookforclassend = 0;
+    $classe{$cnam} = $loc-1;
+    $classer{$cnam} = $. - 1;
+    $classec{$cnam} = $cmplex;
+}
+
+
+# end of def?
+if (  ! $funce{$cdnam} ){
+    $lookfordefend = 0;
+    $funce{$cdnam} = $loc - 1;
+    $funcer{$cdnam} = $. - 1;
+    $funcec{$cdnam} = $cmplex;
+} 
+
+print "\n";
+print $loc . " lines of code found in " . $. . " lines with density " ;
+printf( "%.1f%%  \n", 100*$loc/$. );
+print "\n";
+
+
+$dn=$0;
+$dn =~ s%/[^/]*$%/%;
+
+open (T,"|$dn/tab|sort -n -k 4") || die "no tab?";
+
+print T "Classname Firstline Lastline Textlines LOC Complexity\n\n";
+foreach $k (sort keys %classb) {
+    $bl = $classb{$k};
+    $el = $classe{$k};
+    $blr = $classbr{$k};
+    $elr = $classer{$k};
+    $complexity = $classec{$k} - $classbc{$k} +1;
+    print T $k ." ". $blr ." ". $elr ." ". ($elr-$blr)  ." ". ($el-$bl) ." ". 
+            $complexity . "\n";
+}
+print T "\n";
+close T;
+
+open (T,"|$dn/tab|sort -n -k 5") || die "no tab?";
+print T "Funcname Firstline Lastline Textlines LOC Complexity\n\n";
+foreach $k (sort keys %funcb) {
+    $bl = $funcb{$k};
+    $el = $funce{$k};
+    $blr = $funcbr{$k};
+    $elr = $funcer{$k};
+    $complexity = $funcec{$k} - $funcbc{$k} +1;
+    print T $k ." ". $blr ." ". $elr ." ". ($elr-$blr)  ." ". ($el-$bl) ." ". 
+            $complexity ." ". "\n";
+}
+
+close T;
+print "\n";
+
+
