@@ -1,0 +1,7 @@
+
+The python script slgc_collect_data.py needs to run in a cron job.
+This will collect the necessary data for the following step.
+
+Once you have enough data, run the shell script create_heatmap.sh
+to generate the image seven.png.
+
