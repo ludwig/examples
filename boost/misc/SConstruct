@@ -1,0 +1,3 @@
+Default('.')
+Program('lexical_cast_example.cpp')
+Program('split_example.cpp')

@@ -1,0 +1,53 @@
+#!/bin/ksh
+# 
+# Save this file as "complexity"
+#
+# Analyze real length and complexity of python code
+#
+# 
+# ------------------------------------------------------------------
+#  Web-Based Project Management                              Journyx
+#  and TimeSheet Software                              (800)755-9878
+#  FREE at http://journyx.com/clf                   curt@JOURNYX.com
+# ------------------------------------------------------------------
+#
+#
+# The following program is offered freely into the public domain by journyx
+# and can be used however you want as long as you keep these comments and
+# understand that this code has no warranties at all.
+#
+# This program tells you which of your python classes and functions are too
+# long, complex, untestable, etc.
+#
+# One essential ingredient in any testing methodology is to limit
+# the program logic during development so that the program can be
+# understood, and the amount of testing required to verify the logic
+# is not overwhelming.  A developer who, ignorant of the implications
+# of complexity, expects to verify a module which has 30 if statements and
+# a bunch of for loops in it is heading for disaster.
+#
+# This program helps you look thru large bodies of code to find
+# potential offenders.
+#
+# The complexity number spit out for an entire class doesn't have
+# much relevance really.
+# 
+
+dn=`dirname $0`
+for i in $*
+do
+    echo
+    echo ==============    Complexity analysis for $i ===================
+
+    cls=`egrep '^class' $i`
+    if [[ -n "$cls" ]] ; then
+        $dn/complexdefclass $i
+    fi
+
+    defs=`egrep '^def' $i`
+    if [[ -n "$defs" ]] ; then
+        $dn/complexdef $i
+    fi
+done
+
+

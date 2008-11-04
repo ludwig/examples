@@ -6,7 +6,8 @@ TARGETS = \
 	first \
 	real \
 	regex \
-	custom_syntax
+	custom_syntax \
+	multiple_sources
 
 all: $(TARGETS)
 

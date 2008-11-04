@@ -1,0 +1,4 @@
+Default('.')
+Program(['shared_ptr_default.cpp'])
+Program(['shared_ptr_example.cpp'])
+Program(['shared_ptr_example2.cpp', 'shared_ptr_example2_definition.cpp'])
