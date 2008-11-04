@@ -1,0 +1,7 @@
+http://eli.thegreenplace.net/2008/06/28/compiling-python-extensions-with-distutils-and-mingw/
+
+python setup.py build_ext -i
+
+python setup.py build -c mingw32
+python setup.py build --compiler=mingw32
+
