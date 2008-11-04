@@ -42,7 +42,7 @@ def main():
     import numpy
 
     flags = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
-    dbfile = '/home/laa/slgc.db'
+    dbfile = os.path.join(os.environ['HOME'], 'slgc.db')
     conn = sqlite3.connect(dbfile, detect_types=flags)
     cursor = conn.cursor()
 
