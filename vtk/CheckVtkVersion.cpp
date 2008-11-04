@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 #define MAJ 5
-#define MIN 1
+#define MIN 0
 #define REL 0
 
 int main(void)
